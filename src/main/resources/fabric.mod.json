@@ -1,0 +1,21 @@
+{
+	"schemaVersion": 1,
+	"id": "clipmod",
+	"version": "${version}",
+	"name": "Clip Mod",
+	"description": "Instant replay for Minecraft: keeps the last 30 seconds of gameplay in memory and saves it as a video with one key press (F8) or /clip.",
+	"authors": ["bythahat"],
+	"license": "MIT",
+	"icon": "assets/clipmod/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["dev.clipmod.ClipMod"]
+	},
+	"mixins": ["clipmod.mixins.json"],
+	"depends": {
+		"fabricloader": ">=0.16.0",
+		"minecraft": "~1.21.4",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
