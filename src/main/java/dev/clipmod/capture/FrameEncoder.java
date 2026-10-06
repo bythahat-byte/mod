@@ -5,8 +5,6 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.ByteArrayOutputStream;
@@ -34,12 +32,13 @@ public final class FrameEncoder {
 
 	public FrameEncoder(ReplayBuffer buffer) {
 		this.buffer = buffer;
-		int threads = Math.max(1, Math.min(3, Runtime.getRuntime().availableProcessors() / 2));
+		// frames arrive already scaled, so JPEG encoding is cheap; keep cores free for the game
+		int threads = Math.max(1, Math.min(2, Runtime.getRuntime().availableProcessors() / 4));
 		AtomicInteger n = new AtomicInteger();
 		this.executor = Executors.newFixedThreadPool(threads, r -> {
 			Thread t = new Thread(r, "ClipMod Encoder #" + n.incrementAndGet());
 			t.setDaemon(true);
-			t.setPriority(Thread.NORM_PRIORITY - 1);
+			t.setPriority(Thread.MIN_PRIORITY);
 			return t;
 		});
 	}
@@ -82,15 +81,15 @@ public final class FrameEncoder {
 	}
 
 	/**
-	 * Queues a bottom-up BGRA frame (as produced by glReadPixels) for encoding.
+	 * Queues a top-down BGRA frame (already scaled on the GPU) for encoding.
 	 * Ownership of {@code pixels} passes to the encoder.
 	 */
-	public void submit(byte[] pixels, int width, int height, long timestamp, int maxHeight, float quality) {
+	public void submit(byte[] pixels, int width, int height, long timestamp, float quality) {
 		executor.execute(() -> {
 			try {
 				Worker w = workers.get();
-				byte[] jpeg = w.encode(pixels, width, height, maxHeight, quality);
-				buffer.add(new EncodedFrame(timestamp, w.outWidth, w.outHeight, jpeg));
+				byte[] jpeg = w.encode(pixels, width, height, quality);
+				buffer.add(new EncodedFrame(timestamp, width, height, jpeg));
 			} catch (Throwable t) {
 				dev.clipmod.ClipMod.LOGGER.error("Failed to encode frame", t);
 			} finally {
@@ -110,39 +109,19 @@ public final class FrameEncoder {
 		return new int[] {Math.max(2, outW & ~1), Math.max(2, outH & ~1)};
 	}
 
-	/** Per-thread reusable images and JPEG writer. */
+	/** Per-thread reusable image and JPEG writer. */
 	private static final class Worker {
-		private BufferedImage source;
-		private BufferedImage target;
+		private BufferedImage image;
 		private ImageWriter writer;
 		private final ByteArrayOutputStream bytes = new ByteArrayOutputStream(256 * 1024);
-		int outWidth;
-		int outHeight;
 
-		byte[] encode(byte[] bgra, int width, int height, int maxHeight, float quality) throws Exception {
-			if (source == null || source.getWidth() != width || source.getHeight() != height) {
-				source = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		byte[] encode(byte[] bgra, int width, int height, float quality) throws Exception {
+			if (image == null || image.getWidth() != width || image.getHeight() != height) {
+				image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 			}
-			int[] srcPixels = ((DataBufferInt) source.getRaster().getDataBuffer()).getData();
+			int[] pixels = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
 			// BGRA bytes read as little-endian ints are 0xAARRGGBB; TYPE_INT_RGB ignores alpha
-			ByteBuffer.wrap(bgra, 0, width * height * 4).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().get(srcPixels, 0, width * height);
-
-			int[] size = outputSize(width, height, maxHeight);
-			outWidth = size[0];
-			outHeight = size[1];
-			if (target == null || target.getWidth() != outWidth || target.getHeight() != outHeight) {
-				target = new BufferedImage(outWidth, outHeight, BufferedImage.TYPE_INT_RGB);
-			}
-			// flip vertically (OpenGL rows are bottom-up) and scale in one pass
-			Graphics2D g = target.createGraphics();
-			try {
-				if (outWidth != width || outHeight != height) {
-					g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-				}
-				g.drawImage(source, 0, 0, outWidth, outHeight, 0, height, width, 0, null);
-			} finally {
-				g.dispose();
-			}
+			ByteBuffer.wrap(bgra, 0, width * height * 4).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().get(pixels, 0, width * height);
 
 			if (writer == null) {
 				writer = ImageIO.getImageWritersByFormatName("jpeg").next();
@@ -153,7 +132,7 @@ public final class FrameEncoder {
 			bytes.reset();
 			try (ImageOutputStream ios = ImageIO.createImageOutputStream(bytes)) {
 				writer.setOutput(ios);
-				writer.write(null, new IIOImage(target, null, null), param);
+				writer.write(null, new IIOImage(image, null, null), param);
 			} finally {
 				writer.reset();
 			}

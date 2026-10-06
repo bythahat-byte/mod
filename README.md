@@ -48,10 +48,17 @@ doubles that per step. Check it with `/clip status`.
 
 ## How it works
 
-- Right before each buffer swap, the finished frame (world, HUD and menus) is copied from the
-  GPU into a pixel buffer object. A fence makes the copy asynchronous, so the render thread
-  never waits on the GPU.
-- Background threads flip, scale and JPEG-compress each frame into a rolling in-memory buffer.
+- Right before each buffer swap, the finished frame (world, HUD and menus) is scaled down to
+  clip size on the GPU, then copied into a pixel buffer object. A fence makes the copy
+  asynchronous, so the render thread never waits on the GPU. Only the small image crosses to
+  the CPU, even on Retina/4K screens.
+- A low-priority background thread JPEG-compresses each frame into a rolling in-memory buffer.
+
+### Reducing the FPS cost
+
+- `/clip set fps 20`: capture fewer frames (20 still looks smooth for most clips)
+- `/clip set resolution 480`: smaller frames, less copying and compressing
+- `/clip off` when you don't need it: no cost at all
 - When you save, the frames are resampled to a constant frame rate, written as an MJPEG AVI,
   and converted to MP4 with ffmpeg if it's installed.
 
