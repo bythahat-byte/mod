@@ -27,6 +27,8 @@ PATH, clips are converted to a small H.264 `.mp4` automatically, so they're read
 Discord or YouTube. You can also point the mod at ffmpeg with `ffmpegPath` in `config/clipmod.json`.
 
 On Windows: `winget install ffmpeg`, then restart Minecraft.
+On macOS: `brew install ffmpeg`, then restart Minecraft. Homebrew's install folders are
+checked automatically, even when the launcher is opened from the Dock.
 
 ## Settings (`config/clipmod.json`)
 

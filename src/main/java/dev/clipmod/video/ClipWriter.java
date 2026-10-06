@@ -41,8 +41,8 @@ public final class ClipWriter {
 		if (!wantMp4) {
 			return new Result(avi, false, null);
 		}
-		String ffmpeg = resolveFfmpeg(ffmpegPath);
-		if (!isFfmpegAvailable(ffmpeg)) {
+		String ffmpeg = findFfmpeg(ffmpegPath);
+		if (ffmpeg == null) {
 			return new Result(avi, false, "ffmpeg not found, saved as .avi (install ffmpeg for .mp4)");
 		}
 		Path mp4 = folder.resolve(base + ".mp4");
@@ -65,13 +65,46 @@ public final class ClipWriter {
 		return name;
 	}
 
-	/** Result of an earlier availability check, or null if it has not run yet. */
-	public static Boolean cachedFfmpegAvailability(String ffmpeg) {
-		return FFMPEG_AVAILABLE.get(ffmpeg);
+	/**
+	 * Where to look when no ffmpeg path is configured. Apps started from the macOS Dock/Finder
+	 * don't get the shell PATH, so Homebrew/MacPorts installs need to be checked explicitly.
+	 */
+	private static final List<String> FFMPEG_CANDIDATES = List.of(
+			"ffmpeg",
+			"/opt/homebrew/bin/ffmpeg", // Homebrew, Apple Silicon
+			"/usr/local/bin/ffmpeg", // Homebrew, Intel Mac
+			"/opt/local/bin/ffmpeg", // MacPorts
+			"/usr/bin/ffmpeg");
+
+	/** Result of an earlier {@link #findFfmpeg} call: the executable, "" if none was found, or null if not checked yet. */
+	public static String cachedFfmpeg(String ffmpegPath) {
+		if (ffmpegPath != null && !ffmpegPath.isBlank()) {
+			Boolean ok = FFMPEG_AVAILABLE.get(ffmpegPath);
+			return ok == null ? null : ok ? ffmpegPath : "";
+		}
+		for (String candidate : FFMPEG_CANDIDATES) {
+			Boolean ok = FFMPEG_AVAILABLE.get(candidate);
+			if (ok == null) {
+				return null;
+			}
+			if (ok) {
+				return candidate;
+			}
+		}
+		return "";
 	}
 
-	public static String resolveFfmpeg(String ffmpegPath) {
-		return ffmpegPath == null || ffmpegPath.isBlank() ? "ffmpeg" : ffmpegPath;
+	/** The ffmpeg executable to use, or null if none works. Blocks while checking. */
+	public static String findFfmpeg(String ffmpegPath) {
+		if (ffmpegPath != null && !ffmpegPath.isBlank()) {
+			return isFfmpegAvailable(ffmpegPath) ? ffmpegPath : null;
+		}
+		for (String candidate : FFMPEG_CANDIDATES) {
+			if (isFfmpegAvailable(candidate)) {
+				return candidate;
+			}
+		}
+		return null;
 	}
 
 	public static boolean isFfmpegAvailable(String ffmpeg) {

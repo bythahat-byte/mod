@@ -86,8 +86,8 @@ public final class ClipMod implements ClientModInitializer {
 		// warm up the ffmpeg check so the first clip isn't delayed by it
 		SAVER.execute(() -> {
 			if (config.convertToMp4) {
-				String ffmpeg = ClipWriter.resolveFfmpeg(config.ffmpegPath);
-				LOGGER.info("ffmpeg ({}) available: {}", ffmpeg, ClipWriter.isFfmpegAvailable(ffmpeg));
+				String ffmpeg = ClipWriter.findFfmpeg(config.ffmpegPath);
+				LOGGER.info("ffmpeg: {}", ffmpeg == null ? "not found, clips will be saved as .avi" : ffmpeg);
 			}
 		});
 		LOGGER.info("Clip Mod ready: keeping the last {}s at {} fps", config.bufferSeconds, config.fps);
@@ -239,9 +239,9 @@ public final class ClipMod implements ClientModInitializer {
 				buffer.durationSeconds(), config.bufferSeconds, buffer.frameCount(), buffer.bytes() / 1048576.0)));
 		f.accept(line("Capture: " + config.fps + " fps, " + (config.maxHeight == 0 ? "native" : "max " + config.maxHeight + "p")
 				+ String.format(Locale.ROOT, ", quality %.2f", config.quality)));
-		Boolean ffmpeg = ClipWriter.cachedFfmpegAvailability(ClipWriter.resolveFfmpeg(config.ffmpegPath));
+		String ffmpeg = ClipWriter.cachedFfmpeg(config.ffmpegPath);
 		f.accept(line("Format: " + (!config.convertToMp4 ? "avi" : ffmpeg == null ? "mp4 (checking ffmpeg...)"
-				: ffmpeg ? "mp4 (ffmpeg found)" : "avi (ffmpeg not found)")));
+				: !ffmpeg.isEmpty() ? "mp4 (ffmpeg found: " + ffmpeg + ")" : "avi (ffmpeg not found)")));
 	}
 
 	private static void help(Consumer<Text> f) {
