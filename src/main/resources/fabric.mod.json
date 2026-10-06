@@ -13,8 +13,8 @@
 	},
 	"mixins": ["clipmod.mixins.json"],
 	"depends": {
-		"fabricloader": ">=0.16.0",
-		"minecraft": "~1.21.4",
+		"fabricloader": ">=0.17.0",
+		"minecraft": "~1.21.11",
 		"java": ">=21",
 		"fabric-api": "*"
 	}

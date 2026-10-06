@@ -25,6 +25,7 @@ import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,10 +66,11 @@ public final class ClipMod implements ClientModInitializer {
 		buffer = new ReplayBuffer(config.bufferSeconds);
 		capturer = new FrameCapturer(new FrameEncoder(buffer));
 
+		KeyBinding.Category category = KeyBinding.Category.create(Identifier.of(MOD_ID, "main"));
 		saveKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-				"key.clipmod.save", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_F8, "category.clipmod"));
+				"key.clipmod.save", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_F8, category));
 		toggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-				"key.clipmod.toggle", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, "category.clipmod"));
+				"key.clipmod.toggle", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (saveKey.wasPressed()) {
@@ -282,7 +284,7 @@ public final class ClipMod implements ClientModInitializer {
 		return Text.literal(path.getFileName().toString()).styled(style -> style
 				.withUnderline(true)
 				.withColor(Formatting.AQUA)
-				.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, absolute))
-				.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to open\n" + absolute))));
+				.withClickEvent(new ClickEvent.OpenFile(absolute))
+				.withHoverEvent(new HoverEvent.ShowText(Text.literal("Click to open\n" + absolute))));
 	}
 }

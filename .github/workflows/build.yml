@@ -12,6 +12,11 @@ jobs:
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
       - run: chmod +x gradlew && ./gradlew build --stacktrace
+      - name: Check mixin target exists
+        run: |
+          jar=$(find ~/.gradle/caches .gradle -path '*minecraft*' -name '*.jar' 2>/dev/null | grep -i -E 'clientonly|merged|client' | grep -v sources | head -20)
+          echo "$jar"
+          for j in $jar; do javap -cp "$j" net.minecraft.client.util.Window 2>/dev/null | grep -i -E 'swapBuffers|getFramebuffer' && break; done
       - uses: actions/upload-artifact@v4
         with:
           name: clipmod
