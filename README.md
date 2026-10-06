@@ -1,6 +1,6 @@
 # Clip Mod
 
-Instant replay for Minecraft (Fabric, client-side). The mod keeps the last 30 seconds of
+Instant replay for Minecraft 1.21.11 (Fabric, client-side). The mod keeps the last 30 seconds of
 gameplay in memory, and you can save it as a video at any time, like Shadowplay or the
 OBS replay buffer, but built into the game.
 
@@ -64,7 +64,7 @@ Requires Java 21.
 ```
 
 The mod jar is `build/libs/clipmod-<version>.jar`. Put it in your `mods` folder along with
-[Fabric API](https://modrinth.com/mod/fabric-api). It targets Minecraft **1.21.4**. To target
+[Fabric API](https://modrinth.com/mod/fabric-api). It targets Minecraft **1.21.11**. To target
 another version, change the versions in `gradle.properties`.
 
 GitHub Actions builds the jar on every push. Download it from the run's **Artifacts** section.
