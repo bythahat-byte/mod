@@ -14,6 +14,7 @@ jobs:
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
       - run: chmod +x gradlew && ./gradlew build --stacktrace
+      - run: ./gradlew -p handrestock build --stacktrace
       - name: Check mixin target exists
         run: |
           jar=$(find ~/.gradle/caches .gradle -path '*minecraft*' -name '*.jar' 2>/dev/null | grep -i -E 'clientonly|merged|client' | grep -v sources | head -20)
@@ -22,13 +23,16 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: clipmod
-          path: build/libs/*.jar
+          path: |
+            build/libs/*.jar
+            handrestock/build/libs/*.jar
       - name: Commit jar to download/ folder
         if: github.event_name == 'push'
         run: |
           mkdir -p download
           cp build/libs/clipmod-*.jar download/clipmod-1.21.11.jar
+          cp handrestock/build/libs/handrestock-*.jar download/handrestock-1.21.11.jar
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add download/clipmod-1.21.11.jar
+          git add download/
           git diff --cached --quiet || (git commit -m "Update prebuilt jar [skip ci]" && git push)

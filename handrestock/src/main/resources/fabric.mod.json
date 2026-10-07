@@ -1,0 +1,19 @@
+{
+	"schemaVersion": 1,
+	"id": "handrestock",
+	"version": "${version}",
+	"name": "Hand Restock",
+	"description": "Refills your hand from your inventory when the held stack runs out, including milk buckets, water buckets, potions and stews.",
+	"authors": ["bythahat"],
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["dev.handrestock.HandRestock"]
+	},
+	"depends": {
+		"fabricloader": ">=0.17.0",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
