@@ -8,6 +8,7 @@ import com.mojang.brigadier.context.CommandContext;
 import dev.clipmod.capture.EncodedFrame;
 import dev.clipmod.capture.FrameCapturer;
 import dev.clipmod.capture.FrameEncoder;
+import dev.clipmod.capture.Recorder;
 import dev.clipmod.capture.ReplayBuffer;
 import dev.clipmod.video.ClipWriter;
 import net.fabricmc.api.ClientModInitializer;
@@ -58,6 +59,9 @@ public final class ClipMod implements ClientModInitializer {
 
 	private static KeyBinding saveKey;
 	private static KeyBinding toggleKey;
+	private static KeyBinding recordKey;
+	/** The long recording in progress, or null. Only touched on the client thread. */
+	private static Recorder recorder;
 
 	@Override
 	public void onInitializeClient() {
@@ -71,6 +75,8 @@ public final class ClipMod implements ClientModInitializer {
 				"key.clipmod.save", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_F8, category));
 		toggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
 				"key.clipmod.toggle", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
+		recordKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+				"key.clipmod.record", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_F9, category));
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (saveKey.wasPressed()) {
@@ -78,6 +84,13 @@ public final class ClipMod implements ClientModInitializer {
 			}
 			while (toggleKey.wasPressed()) {
 				setEnabled(!config.enabled, ClipMod::chat);
+			}
+			while (recordKey.wasPressed()) {
+				toggleRecording(ClipMod::chat);
+			}
+			if (recorder != null && recorder.isFull()) {
+				chat(error("Recording reached the 4 GB limit, stopping."));
+				stopRecording(ClipMod::chat);
 			}
 		});
 
@@ -99,7 +112,7 @@ public final class ClipMod implements ClientModInitializer {
 			return;
 		}
 		try {
-			if (!config.enabled) {
+			if (!config.enabled && recorder == null) {
 				if (capturing) {
 					capturer.reset();
 					capturing = false;
@@ -154,6 +167,92 @@ public final class ClipMod implements ClientModInitializer {
 		});
 	}
 
+	private static void toggleRecording(Consumer<Text> feedback) {
+		if (recorder == null) {
+			startRecording(feedback);
+		} else {
+			stopRecording(feedback);
+		}
+	}
+
+	/** Starts a long recording that begins with the replay buffer's last {@code bufferSeconds}. */
+	private static void startRecording(Consumer<Text> feedback) {
+		if (captureBroken) {
+			feedback.accept(error("Frame capture failed earlier, check the log."));
+			return;
+		}
+		if (recorder != null) {
+			feedback.accept(error("Already recording. Press " + key(recordKey) + " or /clip stop to finish."));
+			return;
+		}
+		int[] size = buffer.newestSize();
+		if (size == null) {
+			Window window = MinecraftClient.getInstance().getWindow();
+			size = FrameEncoder.outputSize(window.getFramebufferWidth(), window.getFramebufferHeight(), config.maxHeight);
+		}
+		Recorder rec;
+		try {
+			rec = new Recorder(outputFolder().resolve(".recording-" + System.currentTimeMillis() + ".tmp"),
+					size[0], size[1], config.fps);
+		} catch (Exception e) {
+			LOGGER.error("Could not start recording", e);
+			feedback.accept(error("Could not start recording: " + e.getMessage()));
+			return;
+		}
+		recorder = rec;
+		capturer.setForcedSize(size[0], size[1]);
+		buffer.setListener(rec::accept);
+		List<EncodedFrame> leadIn = config.enabled ? buffer.rawFrames(config.bufferSeconds, size[0], size[1]) : List.of();
+		rec.prime(leadIn);
+		double seconds = leadIn.isEmpty() ? 0 : (leadIn.get(leadIn.size() - 1).timestampNanos() - leadIn.get(0).timestampNanos()) / 1e9;
+		feedback.accept(prefix().append(Text.literal("\u25CF Recording").formatted(Formatting.RED))
+				.append(Text.literal(String.format(Locale.ROOT, " (includes the last %.0fs). Press %s or /clip stop to finish.",
+						seconds, key(recordKey))).formatted(Formatting.WHITE)));
+	}
+
+	private static void stopRecording(Consumer<Text> feedback) {
+		Recorder rec = recorder;
+		if (rec == null) {
+			feedback.accept(error("Not recording. Start with " + key(recordKey) + " or /clip record"));
+			return;
+		}
+		recorder = null;
+		buffer.setListener(null);
+		capturer.setForcedSize(0, 0);
+		feedback.accept(info(String.format(Locale.ROOT, "Stopped recording after %s, saving...", formatTime(rec.elapsedSeconds()))));
+		Path folder = outputFolder();
+		boolean mp4 = config.convertToMp4;
+		String ffmpeg = config.ffmpegPath;
+		SAVER.execute(() -> {
+			try {
+				Recorder.Finished finished = rec.finish();
+				double length = finished.durationSeconds();
+				ClipWriter.Result result = ClipWriter.writeRecording(finished, folder, mp4, ffmpeg);
+				MinecraftClient.getInstance().execute(() -> {
+					feedback.accept(prefix().append(Text.literal("Saved " + formatTime(length) + " recording ").formatted(Formatting.GREEN))
+							.append(fileLink(result.file())));
+					if (result.note() != null) {
+						feedback.accept(prefix().append(Text.literal(result.note()).formatted(Formatting.YELLOW)));
+					}
+				});
+			} catch (Throwable t) {
+				LOGGER.error("Failed to save recording", t);
+				rec.discard();
+				MinecraftClient.getInstance().execute(() -> feedback.accept(error("Failed to save recording: " + t.getMessage())));
+			}
+		});
+	}
+
+	private static String formatTime(double seconds) {
+		long s = Math.round(seconds);
+		return s >= 3600 ? String.format(Locale.ROOT, "%d:%02d:%02d", s / 3600, s / 60 % 60, s % 60)
+				: String.format(Locale.ROOT, "%d:%02d", s / 60, s % 60);
+	}
+
+	private static String key(KeyBinding binding) {
+		return binding.getBoundKeyLocalizedText().getString();
+	}
+
 	private static void setEnabled(boolean enabled, Consumer<Text> feedback) {
 		config.enabled = enabled;
 		config.save(configFile);
@@ -186,6 +285,8 @@ public final class ClipMod implements ClientModInitializer {
 							}
 							saveClip(Math.min(seconds, config.bufferSeconds), f);
 						})))
+				.then(literal("record").executes(ctx -> run(ctx, ClipMod::toggleRecording)))
+				.then(literal("stop").executes(ctx -> run(ctx, ClipMod::stopRecording)))
 				.then(literal("on").executes(ctx -> run(ctx, f -> setEnabled(true, f))))
 				.then(literal("off").executes(ctx -> run(ctx, f -> setEnabled(false, f))))
 				.then(literal("status").executes(ctx -> run(ctx, ClipMod::status)))
@@ -235,6 +336,10 @@ public final class ClipMod implements ClientModInitializer {
 
 	private static void status(Consumer<Text> f) {
 		f.accept(info("Replay buffer: " + (captureBroken ? "BROKEN (see log)" : config.enabled ? "ON" : "OFF")));
+		if (recorder != null) {
+			f.accept(line(String.format(Locale.ROOT, "Recording: %s so far, %.0f MB on disk",
+					formatTime(recorder.elapsedSeconds()), recorder.bytesWritten() / 1048576.0)));
+		}
 		f.accept(line(String.format(Locale.ROOT, "Buffered: %.1fs / %ds, %d frames, %.1f MB",
 				buffer.durationSeconds(), config.bufferSeconds, buffer.frameCount(), buffer.bytes() / 1048576.0)));
 		f.accept(line("Capture: " + config.fps + " fps, " + (config.maxHeight == 0 ? "native" : "max " + config.maxHeight + "p")
@@ -248,6 +353,8 @@ public final class ClipMod implements ClientModInitializer {
 		f.accept(info("Clip Mod commands:"));
 		f.accept(line("/clip - save the last " + config.bufferSeconds + "s (or press " + saveKey.getBoundKeyLocalizedText().getString() + ")"));
 		f.accept(line("/clip <seconds> - save the last N seconds"));
+		f.accept(line("/clip record - start recording, keeping the last " + config.bufferSeconds + "s (or press " + key(recordKey) + ")"));
+		f.accept(line("/clip stop - stop recording and save it"));
 		f.accept(line("/clip on | off - start/stop the replay buffer"));
 		f.accept(line("/clip status - what's buffered, memory use, format"));
 		f.accept(line("/clip folder - open the clips folder"));

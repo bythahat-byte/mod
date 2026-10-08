@@ -10,11 +10,16 @@ OBS replay buffer, but built into the game.
 | --- | --- |
 | Save the last 30 seconds | Press **F8** or run `/clip` |
 | Save the last N seconds | `/clip 10` |
+| Start a recording that begins with the last 30 seconds | Press **F9** or run `/clip record` |
+| Stop recording and save it | Press **F9** again or run `/clip stop` |
 | Pause/resume the replay buffer | `/clip off` / `/clip on` (or bind "Toggle Replay Buffer" in Controls) |
 | See what's buffered and memory use | `/clip status` |
 | Open the clips folder | `/clip folder`, then click the link |
 | Change settings | `/clip set length <seconds>`, `/clip set fps <1-60>`, `/clip set resolution <height, 0 = native>`, `/clip set quality <0.1-1.0>`, `/clip set mp4 <true/false>` |
 | List commands | `/clip help` |
+
+Recordings are streamed to disk while you play, so they can be long (up to ~4 GB, roughly
+30–60 minutes at 720p). Window resizes during a recording are scaled to the recording's size.
 
 Clips go to `.minecraft/clips/`. After saving, the chat message is a link you can click to open the clip.
 You can rebind the keys in Options → Controls → Key Binds → Clip Mod.

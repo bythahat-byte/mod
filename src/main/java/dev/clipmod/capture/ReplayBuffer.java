@@ -15,6 +15,7 @@ public final class ReplayBuffer {
 	private final ConcurrentSkipListMap<Long, EncodedFrame> frames = new ConcurrentSkipListMap<>();
 	private final AtomicLong totalBytes = new AtomicLong();
 	private volatile long maxAgeNanos;
+	private volatile java.util.function.Consumer<EncodedFrame> listener;
 
 	public ReplayBuffer(int seconds) {
 		setLengthSeconds(seconds);
@@ -25,7 +26,16 @@ public final class ReplayBuffer {
 		this.maxAgeNanos = (seconds + 1) * 1_000_000_000L;
 	}
 
+	/** Also receives every new frame (used for long recordings), or null. */
+	public void setListener(java.util.function.Consumer<EncodedFrame> listener) {
+		this.listener = listener;
+	}
+
 	public void add(EncodedFrame frame) {
+		java.util.function.Consumer<EncodedFrame> l = listener;
+		if (l != null) {
+			l.accept(frame);
+		}
 		EncodedFrame previous = frames.put(frame.timestampNanos(), frame);
 		totalBytes.addAndGet(frame.jpeg().length - (previous == null ? 0 : previous.jpeg().length));
 		trim(frame.timestampNanos());
@@ -64,6 +74,28 @@ public final class ReplayBuffer {
 			return 0;
 		}
 		return (frames.lastKey() - frames.firstKey()) / 1e9;
+	}
+
+	/** Size of the newest frame as {width, height}, or null if empty. */
+	public int[] newestSize() {
+		Map.Entry<Long, EncodedFrame> e = frames.lastEntry();
+		return e == null ? null : new int[] {e.getValue().width(), e.getValue().height()};
+	}
+
+	/** The last {@code seconds} of frames of the given size, oldest first, not resampled. */
+	public List<EncodedFrame> rawFrames(double seconds, int width, int height) {
+		List<EncodedFrame> out = new ArrayList<>();
+		Map.Entry<Long, EncodedFrame> last = frames.lastEntry();
+		if (last == null) {
+			return out;
+		}
+		long start = last.getKey() - (long) (seconds * 1e9);
+		for (EncodedFrame f : frames.tailMap(start, true).values()) {
+			if (f.width() == width && f.height() == height) {
+				out.add(f);
+			}
+		}
+		return out;
 	}
 
 	/**

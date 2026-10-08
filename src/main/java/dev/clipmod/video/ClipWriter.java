@@ -27,16 +27,32 @@ public final class ClipWriter {
 		if (frames.isEmpty()) {
 			throw new IOException("No frames recorded yet");
 		}
-		Files.createDirectories(folder);
-		String base = uniqueBaseName(folder);
-		Path avi = folder.resolve(base + ".avi");
-
 		List<byte[]> jpegs = new ArrayList<>(frames.size());
 		for (EncodedFrame f : frames) {
 			jpegs.add(f.jpeg());
 		}
 		EncodedFrame first = frames.get(0);
-		MjpegAviWriter.write(avi, jpegs, first.width(), first.height(), fps);
+		return writeVideo("clip", folder, wantMp4, ffmpegPath,
+				avi -> MjpegAviWriter.write(avi, jpegs, first.width(), first.height(), fps));
+	}
+
+	/** Saves a finished long recording and deletes its temporary data. */
+	public static Result writeRecording(dev.clipmod.capture.Recorder.Finished recording, Path folder, boolean wantMp4, String ffmpegPath) throws IOException {
+		try (recording) {
+			return writeVideo("recording", folder, wantMp4, ffmpegPath,
+					avi -> MjpegAviWriter.write(avi, recording, recording.width, recording.height, recording.fps));
+		}
+	}
+
+	private interface AviWriter {
+		void write(Path avi) throws IOException;
+	}
+
+	private static Result writeVideo(String prefix, Path folder, boolean wantMp4, String ffmpegPath, AviWriter writer) throws IOException {
+		Files.createDirectories(folder);
+		String base = uniqueBaseName(folder, prefix);
+		Path avi = folder.resolve(base + ".avi");
+		writer.write(avi);
 
 		if (!wantMp4) {
 			return new Result(avi, false, null);
@@ -56,8 +72,8 @@ public final class ClipWriter {
 		}
 	}
 
-	private static String uniqueBaseName(Path folder) {
-		String base = "clip_" + LocalDateTime.now().format(NAME_FORMAT);
+	private static String uniqueBaseName(Path folder, String prefix) {
+		String base = prefix + "_" + LocalDateTime.now().format(NAME_FORMAT);
 		String name = base;
 		for (int i = 2; Files.exists(folder.resolve(name + ".avi")) || Files.exists(folder.resolve(name + ".mp4")); i++) {
 			name = base + "_" + i;
@@ -136,7 +152,7 @@ public final class ClipWriter {
 					.redirectErrorStream(true)
 					.redirectOutput(log.toFile())
 					.start();
-			if (!p.waitFor(10, TimeUnit.MINUTES)) {
+			if (!p.waitFor(2, TimeUnit.HOURS)) {
 				p.destroyForcibly();
 				throw new IOException("ffmpeg timed out");
 			}

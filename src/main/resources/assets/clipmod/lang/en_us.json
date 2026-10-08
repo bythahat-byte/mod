@@ -1,5 +1,6 @@
 {
 	"key.category.clipmod.main": "Clip Mod",
 	"key.clipmod.save": "Save Clip (last 30s)",
-	"key.clipmod.toggle": "Toggle Replay Buffer"
+	"key.clipmod.toggle": "Toggle Replay Buffer",
+	"key.clipmod.record": "Start/Stop Recording"
 }

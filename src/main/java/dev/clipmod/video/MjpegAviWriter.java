@@ -18,20 +18,49 @@ public final class MjpegAviWriter {
 	private MjpegAviWriter() {
 	}
 
+	/** The frames of a video, which may live in memory or in a file. */
+	public interface FrameSource {
+		int count();
+
+		int size(int index);
+
+		void writeTo(int index, OutputStream out) throws IOException;
+	}
+
 	public static void write(Path file, List<byte[]> jpegFrames, int width, int height, int fps) throws IOException {
-		int frameCount = jpegFrames.size();
+		write(file, new FrameSource() {
+			@Override
+			public int count() {
+				return jpegFrames.size();
+			}
+
+			@Override
+			public int size(int index) {
+				return jpegFrames.get(index).length;
+			}
+
+			@Override
+			public void writeTo(int index, OutputStream out) throws IOException {
+				out.write(jpegFrames.get(index));
+			}
+		}, width, height, fps);
+	}
+
+	public static void write(Path file, FrameSource frames, int width, int height, int fps) throws IOException {
+		int frameCount = frames.count();
 		long moviPayload = 4; // "movi"
 		int maxFrameSize = 0;
-		for (byte[] frame : jpegFrames) {
-			moviPayload += 8 + padded(frame.length);
-			maxFrameSize = Math.max(maxFrameSize, frame.length);
+		for (int i = 0; i < frameCount; i++) {
+			int size = frames.size(i);
+			moviPayload += 8 + padded(size);
+			maxFrameSize = Math.max(maxFrameSize, size);
 		}
 		long idx1Payload = 16L * frameCount;
 
 		long hdrlPayload = 4 + (8 + 56) + (8 + strlPayload());
 		long riffPayload = 4 + (8 + hdrlPayload) + (8 + moviPayload) + (8 + idx1Payload);
 		if (riffPayload > 0xFFFFFFFFL) {
-			throw new IOException("Clip is too large for an AVI file (>4 GB); lower the quality, fps or resolution");
+			throw new IOException("Video is too large for an AVI file (>4 GB); lower the quality, fps or resolution");
 		}
 
 		try (OutputStream raw = Files.newOutputStream(file);
@@ -104,11 +133,12 @@ public final class MjpegAviWriter {
 			out.fourcc("LIST");
 			out.u32(moviPayload);
 			out.fourcc("movi");
-			for (byte[] frame : jpegFrames) {
+			for (int i = 0; i < frameCount; i++) {
+				int size = frames.size(i);
 				out.fourcc("00dc");
-				out.u32(frame.length);
-				out.bytes(frame);
-				if ((frame.length & 1) != 0) {
+				out.u32(size);
+				frames.writeTo(i, out.out);
+				if ((size & 1) != 0) {
 					out.u8(0);
 				}
 			}
@@ -117,12 +147,13 @@ public final class MjpegAviWriter {
 			out.fourcc("idx1");
 			out.u32(idx1Payload);
 			long offset = 4;
-			for (byte[] frame : jpegFrames) {
+			for (int i = 0; i < frameCount; i++) {
+				int size = frames.size(i);
 				out.fourcc("00dc");
 				out.u32(AVIIF_KEYFRAME);
 				out.u32(offset);
-				out.u32(frame.length);
-				offset += 8 + padded(frame.length);
+				out.u32(size);
+				offset += 8 + padded(size);
 			}
 		}
 	}
@@ -136,7 +167,7 @@ public final class MjpegAviWriter {
 	}
 
 	private static final class LittleEndianOut implements AutoCloseable {
-		private final OutputStream out;
+		final OutputStream out;
 
 		LittleEndianOut(OutputStream out) {
 			this.out = out;
@@ -162,10 +193,6 @@ public final class MjpegAviWriter {
 			for (int i = 0; i < 4; i++) {
 				out.write(s.charAt(i));
 			}
-		}
-
-		void bytes(byte[] b) throws IOException {
-			out.write(b);
 		}
 
 		@Override

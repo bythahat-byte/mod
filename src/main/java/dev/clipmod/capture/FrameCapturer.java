@@ -32,11 +32,21 @@ public final class FrameCapturer {
 	private int fboWidth;
 	private int fboHeight;
 
+	// while recording, frames keep the recording's size even if the window is resized
+	private int forcedWidth;
+	private int forcedHeight;
+
 	public FrameCapturer(FrameEncoder encoder) {
 		this.encoder = encoder;
 		for (int i = 0; i < SLOTS; i++) {
 			slots[i] = new Slot();
 		}
+	}
+
+	/** Makes every captured frame this size (0, 0 = follow the window). */
+	public void setForcedSize(int width, int height) {
+		forcedWidth = width;
+		forcedHeight = height;
 	}
 
 	/** Called on the render thread with the default framebuffer holding the completed frame. */
@@ -60,7 +70,7 @@ public final class FrameCapturer {
 		}
 		nextSlot = (nextSlot + 1) % SLOTS;
 
-		int[] out = FrameEncoder.outputSize(width, height, maxHeight);
+		int[] out = forcedWidth > 0 ? new int[] {forcedWidth, forcedHeight} : FrameEncoder.outputSize(width, height, maxHeight);
 		request(slot, width, height, out[0], out[1], now);
 	}
 
