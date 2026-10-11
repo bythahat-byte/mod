@@ -18,8 +18,10 @@ OBS replay buffer, but built into the game.
 | Change settings | `/clip set length <seconds>`, `/clip set fps <1-60>`, `/clip set resolution <height, 0 = native>`, `/clip set quality <0.1-1.0>`, `/clip set mp4 <true/false>` |
 | List commands | `/clip help` |
 
-Recordings are streamed to disk while you play, so they can be long (up to ~4 GB, roughly
-30–60 minutes at 720p). Window resizes during a recording are scaled to the recording's size.
+Recordings are written straight into a video file while you play, so they can be long (up to
+~4 GB, roughly 30–60 minutes at 720p) and saving needs no extra disk space. If your disk gets
+nearly full (under 300 MB free), the recording stops and is saved automatically. If converting
+to mp4 fails, the .avi is kept. Window resizes during a recording are scaled to the recording's size.
 
 Clips go to `.minecraft/clips/`. After saving, the chat message is a link you can click to open the clip.
 You can rebind the keys in Options → Controls → Key Binds → Clip Mod.

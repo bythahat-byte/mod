@@ -31,6 +31,7 @@ import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
@@ -62,6 +63,9 @@ public final class ClipMod implements ClientModInitializer {
 	private static KeyBinding recordKey;
 	/** The long recording in progress, or null. Only touched on the client thread. */
 	private static Recorder recorder;
+	/** Stop recording when the disk gets this full, leaving room to finish the file and convert it. */
+	private static final long MIN_FREE_BYTES = 300L * 1024 * 1024;
+	private static int diskCheckTicks;
 
 	@Override
 	public void onInitializeClient() {
@@ -89,8 +93,17 @@ public final class ClipMod implements ClientModInitializer {
 				toggleRecording(ClipMod::chat);
 			}
 			if (recorder != null && recorder.isFull()) {
-				chat(error("Recording reached the 4 GB limit, stopping."));
+				chat(error(recorder.error() != null
+						? "Couldn't write the recording (" + recorder.error().getMessage() + "), stopping."
+						: "Recording reached the 4 GB limit, stopping."));
 				stopRecording(ClipMod::chat);
+			}
+			if (recorder != null && ++diskCheckTicks >= 100) { // every 5 seconds
+				diskCheckTicks = 0;
+				if (freeSpace(outputFolder()) < MIN_FREE_BYTES) {
+					chat(error("Your disk is almost full, stopping the recording so it can be saved."));
+					stopRecording(ClipMod::chat);
+				}
 			}
 		});
 
@@ -190,9 +203,16 @@ public final class ClipMod implements ClientModInitializer {
 			Window window = MinecraftClient.getInstance().getWindow();
 			size = FrameEncoder.outputSize(window.getFramebufferWidth(), window.getFramebufferHeight(), config.maxHeight);
 		}
+		Path folder = outputFolder();
+		long free = freeSpace(folder);
+		if (free < 2 * MIN_FREE_BYTES) {
+			feedback.accept(error(String.format(Locale.ROOT,
+					"Not enough disk space to record (%.0f MB free). Free up some space first.", free / 1048576.0)));
+			return;
+		}
 		Recorder rec;
 		try {
-			rec = new Recorder(outputFolder().resolve(".recording-" + System.currentTimeMillis() + ".tmp"),
+			rec = new Recorder(folder.resolve("recording-in-progress-" + System.currentTimeMillis() + ".avi"),
 					size[0], size[1], config.fps);
 		} catch (Exception e) {
 			LOGGER.error("Could not start recording", e);
@@ -225,9 +245,8 @@ public final class ClipMod implements ClientModInitializer {
 		String ffmpeg = config.ffmpegPath;
 		SAVER.execute(() -> {
 			try {
-				Recorder.Finished finished = rec.finish();
-				double length = finished.durationSeconds();
-				ClipWriter.Result result = ClipWriter.writeRecording(finished, folder, mp4, ffmpeg);
+				double length = rec.finish();
+				ClipWriter.Result result = ClipWriter.saveRecording(rec.file(), folder, mp4, ffmpeg);
 				MinecraftClient.getInstance().execute(() -> {
 					feedback.accept(prefix().append(Text.literal("Saved " + formatTime(length) + " recording ").formatted(Formatting.GREEN))
 							.append(fileLink(result.file())));
@@ -237,10 +256,28 @@ public final class ClipMod implements ClientModInitializer {
 				});
 			} catch (Throwable t) {
 				LOGGER.error("Failed to save recording", t);
-				rec.discard();
-				MinecraftClient.getInstance().execute(() -> feedback.accept(error("Failed to save recording: " + t.getMessage())));
+				boolean kept = Files.exists(rec.file());
+				MinecraftClient.getInstance().execute(() -> {
+					feedback.accept(error("Failed to save recording: " + t.getMessage()));
+					if (kept) {
+						feedback.accept(prefix().append(Text.literal("The footage was kept here: ").formatted(Formatting.YELLOW))
+								.append(fileLink(rec.file())));
+					}
+				});
 			}
 		});
+	}
+
+	private static long freeSpace(Path folder) {
+		try {
+			Path existing = folder;
+			while (existing != null && !Files.exists(existing)) {
+				existing = existing.getParent();
+			}
+			return existing == null ? Long.MAX_VALUE : Files.getFileStore(existing).getUsableSpace();
+		} catch (Exception e) {
+			return Long.MAX_VALUE; // can't tell; don't block recording
+		}
 	}
 
 	private static String formatTime(double seconds) {

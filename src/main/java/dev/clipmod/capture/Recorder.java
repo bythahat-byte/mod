@@ -6,6 +6,8 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -14,18 +16,23 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * A long recording. Frames are streamed to a temporary file as they are encoded, so the
- * recording can be much longer than the in-memory replay buffer. Encoder threads can finish
- * frames slightly out of order, so frames are held briefly and written in timestamp order.
+ * A long recording, written straight into an AVI file as frames are encoded. Saving only
+ * appends the index and fills in the header, so it needs no extra disk space, and the file
+ * is a playable video even if a later step (like the mp4 conversion) fails.
+ * <p>
+ * Encoder threads can finish frames slightly out of order, so frames are held briefly and
+ * written in timestamp order. To keep a constant frame rate, the index may point at the same
+ * frame more than once instead of storing duplicates.
  */
 public final class Recorder {
 	/** Stop before the AVI hits its 4 GB limit. */
 	private static final long MAX_BYTES = 3_800_000_000L;
 	/** How long frames wait for earlier ones that are still being encoded. */
 	private static final long REORDER_NANOS = 500_000_000L;
+	private static final int AVIIF_KEYFRAME = 0x10;
 
 	private final Object lock = new Object();
-	private final Path dataFile;
+	private final Path file;
 	private final OutputStream out;
 	private final TreeMap<Long, EncodedFrame> pending = new TreeMap<>();
 	private final int width;
@@ -34,9 +41,12 @@ public final class Recorder {
 	private final long startedAt = System.nanoTime();
 
 	private long[] timestamps = new long[1024];
+	/** Offset of each frame chunk relative to the "movi" fourcc. */
 	private long[] offsets = new long[1024];
 	private int[] lengths = new int[1024];
 	private int count;
+	private int maxFrameSize;
+	/** Bytes of frame chunks written after the header. */
 	private long written;
 	private long lastWritten = Long.MIN_VALUE;
 	private volatile boolean full;
@@ -44,21 +54,19 @@ public final class Recorder {
 	private boolean primed;
 	private IOException error;
 
-	public Recorder(Path dataFile, int width, int height, int fps) throws IOException {
-		this.dataFile = dataFile;
+	public Recorder(Path file, int width, int height, int fps) throws IOException {
+		this.file = file;
 		this.width = width;
 		this.height = height;
 		this.fps = fps;
-		Files.createDirectories(dataFile.getParent());
-		this.out = new BufferedOutputStream(Files.newOutputStream(dataFile), 1 << 20);
+		Files.createDirectories(file.getParent());
+		this.out = new BufferedOutputStream(Files.newOutputStream(file), 1 << 20);
+		// placeholder header, rewritten with the real sizes when the recording is finished
+		out.write(MjpegAviWriter.header(width, height, fps, 0, 0, 4, 0));
 	}
 
-	public int width() {
-		return width;
-	}
-
-	public int height() {
-		return height;
+	public Path file() {
+		return file;
 	}
 
 	public int fps() {
@@ -74,7 +82,7 @@ public final class Recorder {
 		return written;
 	}
 
-	/** True once the recording hit the size limit; it should be stopped. */
+	/** True once the recording hit the size limit or a write failed; it should be stopped. */
 	public boolean isFull() {
 		return full;
 	}
@@ -121,14 +129,21 @@ public final class Recorder {
 			if (f.timestampNanos() <= lastWritten) {
 				continue; // duplicate (frame was in the replay buffer and also passed to us live)
 			}
-			if (written + f.jpeg().length > MAX_BYTES) {
+			byte[] jpeg = f.jpeg();
+			long chunk = 8 + ((jpeg.length + 1L) & ~1L);
+			if (written + chunk > MAX_BYTES) {
 				full = true;
 				pending.clear();
 				return;
 			}
 			try {
-				out.write(f.jpeg());
+				writeChunkHeader(jpeg.length);
+				out.write(jpeg);
+				if ((jpeg.length & 1) != 0) {
+					out.write(0);
+				}
 			} catch (IOException ex) {
+				// most likely the disk is full; what's written so far is still saved
 				error = ex;
 				full = true;
 				pending.clear();
@@ -140,119 +155,104 @@ public final class Recorder {
 				lengths = Arrays.copyOf(lengths, count * 2);
 			}
 			timestamps[count] = f.timestampNanos();
-			offsets[count] = written;
-			lengths[count] = f.jpeg().length;
+			offsets[count] = 4 + written;
+			lengths[count] = jpeg.length;
 			count++;
-			written += f.jpeg().length;
+			maxFrameSize = Math.max(maxFrameSize, jpeg.length);
+			written += chunk;
 			lastWritten = f.timestampNanos();
 		}
 	}
 
-	/** Stops accepting frames and returns the finished recording, resampled to a constant frame rate. */
-	public Finished finish() throws IOException {
+	private void writeChunkHeader(int size) throws IOException {
+		out.write('0');
+		out.write('0');
+		out.write('d');
+		out.write('c');
+		out.write(size & 0xFF);
+		out.write((size >>> 8) & 0xFF);
+		out.write((size >>> 16) & 0xFF);
+		out.write((size >>> 24) & 0xFF);
+	}
+
+	/** Why the recording stopped early, or null. */
+	public IOException error() {
+		return error;
+	}
+
+	/**
+	 * Stops accepting frames and turns the file into a finished video: appends an index that
+	 * plays the frames back at a constant frame rate, then fills in the header.
+	 *
+	 * @return the length of the video in seconds
+	 */
+	public double finish() throws IOException {
 		synchronized (lock) {
-			if (!closed) {
-				flush(Long.MAX_VALUE);
-				closed = true;
-				out.close();
+			if (closed) {
+				throw new IOException("Recording already finished");
 			}
-			if (error != null) {
-				throw error;
+			flush(Long.MAX_VALUE);
+			closed = true;
+			try {
+				out.close();
+			} catch (IOException e) {
+				// buffered data may be lost; trim to the frames we know made it
+				if (error == null) {
+					error = e;
+				}
 			}
 			if (count == 0) {
-				throw new IOException("Nothing was recorded");
+				Files.deleteIfExists(file);
+				throw new IOException("Nothing was recorded" + (error != null ? " (" + error.getMessage() + ")" : ""));
 			}
-			long interval = 1_000_000_000L / fps;
-			long first = timestamps[0];
-			long end = timestamps[count - 1];
-			int outCount = (int) Math.min(Integer.MAX_VALUE - 8, (end - first) / interval + 1);
-			int[] order = new int[outCount];
-			int j = 0;
-			for (int i = 0; i < outCount; i++) {
-				long t = first + i * interval + interval / 2;
-				while (j + 1 < count && timestamps[j + 1] <= t) {
-					j++;
+
+			try (RandomAccessFile raf = new RandomAccessFile(file.toFile(), "rw")) {
+				// drop frames that never fully reached the disk (e.g. disk full mid-write)
+				long available = raf.length() - MjpegAviWriter.HEADER_SIZE;
+				while (count > 0 && offsets[count - 1] - 4 + 8 + lengths[count - 1] > available) {
+					count--;
 				}
-				order[i] = j;
+				if (count == 0) {
+					throw new IOException("Nothing was recorded" + (error != null ? " (" + error.getMessage() + ")" : ""));
+				}
+				long moviPayload = offsets[count - 1] + 8 + ((lengths[count - 1] + 1L) & ~1L);
+
+				long interval = 1_000_000_000L / fps;
+				long first = timestamps[0];
+				int outCount = (int) Math.min(Integer.MAX_VALUE / 16 - 1, (timestamps[count - 1] - first) / interval + 1);
+				ByteBuffer index = ByteBuffer.allocate(8 + 16 * outCount).order(ByteOrder.LITTLE_ENDIAN);
+				index.put((byte) 'i').put((byte) 'd').put((byte) 'x').put((byte) '1');
+				index.putInt(16 * outCount);
+				int j = 0;
+				for (int i = 0; i < outCount; i++) {
+					long t = first + i * interval + interval / 2;
+					while (j + 1 < count && timestamps[j + 1] <= t) {
+						j++;
+					}
+					index.put((byte) '0').put((byte) '0').put((byte) 'd').put((byte) 'c');
+					index.putInt(AVIIF_KEYFRAME);
+					index.putInt((int) offsets[j]);
+					index.putInt(lengths[j]);
+				}
+
+				raf.setLength(MjpegAviWriter.HEADER_SIZE + moviPayload - 4);
+				raf.seek(raf.length());
+				raf.write(index.array());
+				raf.seek(0);
+				raf.write(MjpegAviWriter.header(width, height, fps, outCount, maxFrameSize, moviPayload, 16L * outCount));
+				return outCount / (double) fps;
 			}
-			return new Finished(dataFile, offsets, lengths, order, width, height, fps);
 		}
 	}
 
-	/** Deletes the temporary data file. */
-	public void discard() {
+	/** Stops writing without finishing the file (used if the game shuts down mid-recording). */
+	public void abandon() {
 		synchronized (lock) {
 			closed = true;
 			try {
 				out.close();
 			} catch (IOException ignored) {
 			}
-		}
-		try {
-			Files.deleteIfExists(dataFile);
-		} catch (IOException ignored) {
-		}
-	}
-
-	/** A finished recording backed by the temporary data file. */
-	public static final class Finished implements MjpegAviWriter.FrameSource, AutoCloseable {
-		private final Path dataFile;
-		private final long[] offsets;
-		private final int[] lengths;
-		private final int[] order;
-		public final int width;
-		public final int height;
-		public final int fps;
-		private RandomAccessFile file;
-		private byte[] scratch = new byte[256 * 1024];
-
-		Finished(Path dataFile, long[] offsets, int[] lengths, int[] order, int width, int height, int fps) {
-			this.dataFile = dataFile;
-			this.offsets = offsets;
-			this.lengths = lengths;
-			this.order = order;
-			this.width = width;
-			this.height = height;
-			this.fps = fps;
-		}
-
-		public double durationSeconds() {
-			return order.length / (double) fps;
-		}
-
-		@Override
-		public int count() {
-			return order.length;
-		}
-
-		@Override
-		public int size(int index) {
-			return lengths[order[index]];
-		}
-
-		@Override
-		public void writeTo(int index, OutputStream out) throws IOException {
-			if (file == null) {
-				file = new RandomAccessFile(dataFile.toFile(), "r");
-			}
-			int frame = order[index];
-			int length = lengths[frame];
-			if (scratch.length < length) {
-				scratch = new byte[length];
-			}
-			file.seek(offsets[frame]);
-			file.readFully(scratch, 0, length);
-			out.write(scratch, 0, length);
-		}
-
-		/** Closes and deletes the temporary data file. */
-		@Override
-		public void close() throws IOException {
-			if (file != null) {
-				file.close();
-				file = null;
-			}
-			Files.deleteIfExists(dataFile);
 		}
 	}
 }

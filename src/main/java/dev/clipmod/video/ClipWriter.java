@@ -36,12 +36,13 @@ public final class ClipWriter {
 				avi -> MjpegAviWriter.write(avi, jpegs, first.width(), first.height(), fps));
 	}
 
-	/** Saves a finished long recording and deletes its temporary data. */
-	public static Result writeRecording(dev.clipmod.capture.Recorder.Finished recording, Path folder, boolean wantMp4, String ffmpegPath) throws IOException {
-		try (recording) {
-			return writeVideo("recording", folder, wantMp4, ffmpegPath,
-					avi -> MjpegAviWriter.write(avi, recording, recording.width, recording.height, recording.fps));
-		}
+	/**
+	 * Names a finished recording (already a playable .avi, see {@link dev.clipmod.capture.Recorder})
+	 * and converts it to .mp4 if possible. The .avi is kept if anything goes wrong.
+	 */
+	public static Result saveRecording(Path finishedAvi, Path folder, boolean wantMp4, String ffmpegPath) throws IOException {
+		return writeVideo("recording", folder, wantMp4, ffmpegPath,
+				avi -> Files.move(finishedAvi, avi));
 	}
 
 	private interface AviWriter {
@@ -52,7 +53,12 @@ public final class ClipWriter {
 		Files.createDirectories(folder);
 		String base = uniqueBaseName(folder, prefix);
 		Path avi = folder.resolve(base + ".avi");
-		writer.write(avi);
+		try {
+			writer.write(avi);
+		} catch (IOException | RuntimeException e) {
+			Files.deleteIfExists(avi); // don't leave a broken partial file taking up space
+			throw e;
+		}
 
 		if (!wantMp4) {
 			return new Result(avi, false, null);
@@ -68,7 +74,8 @@ public final class ClipWriter {
 			return new Result(mp4, true, null);
 		} catch (IOException e) {
 			Files.deleteIfExists(mp4);
-			return new Result(avi, false, "mp4 conversion failed (" + e.getMessage() + "), kept .avi");
+			String reason = e.getMessage() != null && e.getMessage().contains("No space left") ? "disk is full" : e.getMessage();
+			return new Result(avi, false, "mp4 conversion failed (" + reason + "), kept the .avi");
 		}
 	}
 

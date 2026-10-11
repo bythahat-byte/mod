@@ -57,82 +57,9 @@ public final class MjpegAviWriter {
 		}
 		long idx1Payload = 16L * frameCount;
 
-		long hdrlPayload = 4 + (8 + 56) + (8 + strlPayload());
-		long riffPayload = 4 + (8 + hdrlPayload) + (8 + moviPayload) + (8 + idx1Payload);
-		if (riffPayload > 0xFFFFFFFFL) {
-			throw new IOException("Video is too large for an AVI file (>4 GB); lower the quality, fps or resolution");
-		}
-
 		try (OutputStream raw = Files.newOutputStream(file);
 				LittleEndianOut out = new LittleEndianOut(new BufferedOutputStream(raw, 1 << 20))) {
-			out.fourcc("RIFF");
-			out.u32(riffPayload);
-			out.fourcc("AVI ");
-
-			// --- header list ---
-			out.fourcc("LIST");
-			out.u32(hdrlPayload);
-			out.fourcc("hdrl");
-
-			out.fourcc("avih");
-			out.u32(56);
-			out.u32(1_000_000L / fps); // dwMicroSecPerFrame
-			out.u32((long) maxFrameSize * fps); // dwMaxBytesPerSec
-			out.u32(0); // dwPaddingGranularity
-			out.u32(AVIF_HASINDEX); // dwFlags
-			out.u32(frameCount); // dwTotalFrames
-			out.u32(0); // dwInitialFrames
-			out.u32(1); // dwStreams
-			out.u32(maxFrameSize); // dwSuggestedBufferSize
-			out.u32(width);
-			out.u32(height);
-			out.u32(0);
-			out.u32(0);
-			out.u32(0);
-			out.u32(0); // dwReserved[4]
-
-			out.fourcc("LIST");
-			out.u32(strlPayload());
-			out.fourcc("strl");
-
-			out.fourcc("strh");
-			out.u32(56);
-			out.fourcc("vids"); // fccType
-			out.fourcc("MJPG"); // fccHandler
-			out.u32(0); // dwFlags
-			out.u16(0); // wPriority
-			out.u16(0); // wLanguage
-			out.u32(0); // dwInitialFrames
-			out.u32(1); // dwScale
-			out.u32(fps); // dwRate
-			out.u32(0); // dwStart
-			out.u32(frameCount); // dwLength
-			out.u32(maxFrameSize); // dwSuggestedBufferSize
-			out.u32(0xFFFFFFFFL); // dwQuality (-1 = default)
-			out.u32(0); // dwSampleSize
-			out.u16(0);
-			out.u16(0);
-			out.u16(width);
-			out.u16(height); // rcFrame
-
-			out.fourcc("strf");
-			out.u32(40); // BITMAPINFOHEADER
-			out.u32(40); // biSize
-			out.u32(width);
-			out.u32(height);
-			out.u16(1); // biPlanes
-			out.u16(24); // biBitCount
-			out.fourcc("MJPG"); // biCompression
-			out.u32((long) width * height * 3); // biSizeImage
-			out.u32(0);
-			out.u32(0);
-			out.u32(0);
-			out.u32(0);
-
-			// --- frame data ---
-			out.fourcc("LIST");
-			out.u32(moviPayload);
-			out.fourcc("movi");
+			out.out.write(header(width, height, fps, frameCount, maxFrameSize, moviPayload, idx1Payload));
 			for (int i = 0; i < frameCount; i++) {
 				int size = frames.size(i);
 				out.fourcc("00dc");
@@ -158,15 +85,103 @@ public final class MjpegAviWriter {
 		}
 	}
 
+	/** Bytes before the first frame chunk: the RIFF/hdrl headers and the "movi" list header. */
+	public static final int HEADER_SIZE = 224;
+
+	/**
+	 * The file header up to and including the "movi" fourcc ({@link #HEADER_SIZE} bytes).
+	 * {@code moviPayload} counts the "movi" fourcc plus all frame chunks.
+	 */
+	public static byte[] header(int width, int height, int fps, int frameCount, int maxFrameSize, long moviPayload, long idx1Payload) throws IOException {
+		long hdrlPayload = 4 + (8 + 56) + (8 + strlPayload());
+		long riffPayload = 4 + (8 + hdrlPayload) + (8 + moviPayload) + (8 + idx1Payload);
+		if (riffPayload > 0xFFFFFFFFL) {
+			throw new IOException("Video is too large for an AVI file (>4 GB); lower the quality, fps or resolution");
+		}
+		java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream(HEADER_SIZE);
+		LittleEndianOut out = new LittleEndianOut(bytes);
+		out.fourcc("RIFF");
+		out.u32(riffPayload);
+		out.fourcc("AVI ");
+
+		// --- header list ---
+		out.fourcc("LIST");
+		out.u32(hdrlPayload);
+		out.fourcc("hdrl");
+
+		out.fourcc("avih");
+		out.u32(56);
+		out.u32(1_000_000L / fps); // dwMicroSecPerFrame
+		out.u32((long) maxFrameSize * fps); // dwMaxBytesPerSec
+		out.u32(0); // dwPaddingGranularity
+		out.u32(AVIF_HASINDEX); // dwFlags
+		out.u32(frameCount); // dwTotalFrames
+		out.u32(0); // dwInitialFrames
+		out.u32(1); // dwStreams
+		out.u32(maxFrameSize); // dwSuggestedBufferSize
+		out.u32(width);
+		out.u32(height);
+		out.u32(0);
+		out.u32(0);
+		out.u32(0);
+		out.u32(0); // dwReserved[4]
+
+		out.fourcc("LIST");
+		out.u32(strlPayload());
+		out.fourcc("strl");
+
+		out.fourcc("strh");
+		out.u32(56);
+		out.fourcc("vids"); // fccType
+		out.fourcc("MJPG"); // fccHandler
+		out.u32(0); // dwFlags
+		out.u16(0); // wPriority
+		out.u16(0); // wLanguage
+		out.u32(0); // dwInitialFrames
+		out.u32(1); // dwScale
+		out.u32(fps); // dwRate
+		out.u32(0); // dwStart
+		out.u32(frameCount); // dwLength
+		out.u32(maxFrameSize); // dwSuggestedBufferSize
+		out.u32(0xFFFFFFFFL); // dwQuality (-1 = default)
+		out.u32(0); // dwSampleSize
+		out.u16(0);
+		out.u16(0);
+		out.u16(width);
+		out.u16(height); // rcFrame
+
+		out.fourcc("strf");
+		out.u32(40); // BITMAPINFOHEADER
+		out.u32(40); // biSize
+		out.u32(width);
+		out.u32(height);
+		out.u16(1); // biPlanes
+		out.u16(24); // biBitCount
+		out.fourcc("MJPG"); // biCompression
+		out.u32((long) width * height * 3); // biSizeImage
+		out.u32(0);
+		out.u32(0);
+		out.u32(0);
+		out.u32(0);
+
+		out.fourcc("LIST");
+		out.u32(moviPayload);
+		out.fourcc("movi");
+		if (bytes.size() != HEADER_SIZE) {
+			throw new IllegalStateException("AVI header is " + bytes.size() + " bytes");
+		}
+		return bytes.toByteArray();
+	}
+
 	private static long strlPayload() {
 		return 4 + (8 + 56) + (8 + 40);
 	}
 
-	private static long padded(int length) {
+	static long padded(int length) {
 		return (length + 1L) & ~1L;
 	}
 
-	private static final class LittleEndianOut implements AutoCloseable {
+	static final class LittleEndianOut implements AutoCloseable {
 		final OutputStream out;
 
 		LittleEndianOut(OutputStream out) {
