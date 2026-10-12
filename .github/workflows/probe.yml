@@ -1,0 +1,23 @@
+name: probe
+on: [push]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - run: chmod +x gradlew && ./gradlew -p handrestock genSources -q 2>&1 | tail -5
+      - run: |
+          jar=$(find ~/.gradle/caches handrestock/.gradle -name 'minecraft-*1.21.11*sources.jar' | head -1); echo "JAR=$jar"
+          mkdir -p src && cd src && unzip -q -o "$jar"
+          echo "=== files mentioning submitLabel"; grep -rl "submitLabel" . | head
+          f=$(grep -rl "class LabelCommandRenderer" . | head -1); echo "=== $f"; cat "$f"
+          echo "=== EntityRenderer label bits"; grep -n -A25 "void renderLabelIfPresent" net/minecraft/client/render/entity/EntityRenderer.java
+          grep -n -B2 -A12 "boolean hasLabel" net/minecraft/client/render/entity/EntityRenderer.java net/minecraft/client/render/entity/LivingEntityRenderer.java
+          for f in $(grep -rl "hasLabel\|renderLabelIfPresent" net/minecraft/client/render/entity | grep -i -E "player|avatar"); do echo "=== $f"; grep -n -B2 -A20 "hasLabel\|renderLabelIfPresent" $f; done
+          echo "=== submitLabel decl"; grep -rn -A3 "void submitLabel" . | head -40
+          echo "=== getTextBackgroundOpacity users"; grep -rn "getTextBackgroundOpacity" . | head
