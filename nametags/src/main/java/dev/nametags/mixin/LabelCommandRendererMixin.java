@@ -13,7 +13,7 @@ public abstract class LabelCommandRendererMixin {
 	 * is the faded copy that shows through walls.
 	 */
 	@ModifyArg(method = "render", index = 4, at = @At(value = "INVOKE", ordinal = 1,
-			target = "Lnet/minecraft/client/font/TextRenderer;draw"))
+			target = "Lnet/minecraft/client/font/TextRenderer;draw(Lnet/minecraft/text/Text;FFIZLorg/joml/Matrix4f;Lnet/minecraft/client/render/VertexConsumerProvider;Lnet/minecraft/client/font/TextRenderer$TextLayerType;II)V"))
 	private boolean nametags$shadow(boolean shadow) {
 		return shadow || Nametags.config.textShadow;
 	}
