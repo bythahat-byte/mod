@@ -12,7 +12,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: chmod +x gradlew && ./gradlew -p handrestock genSources -q 2>&1 | tail -5
       - run: |
-          jar=$(find ~/.gradle/caches handrestock/.gradle -name 'minecraft-*1.21.11*sources.jar' | head -1); echo "JAR=$jar"
+          jar=$(find ~/.gradle/caches $PWD/handrestock/.gradle -name 'minecraft-*1.21.11*sources.jar' | head -1); echo "JAR=$jar"
           mkdir -p src && cd src && unzip -q -o "$jar"
           echo "=== files mentioning submitLabel"; grep -rl "submitLabel" . | head
           f=$(grep -rl "class LabelCommandRenderer" . | head -1); echo "=== $f"; cat "$f"
