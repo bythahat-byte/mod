@@ -16,6 +16,7 @@ jobs:
       - run: chmod +x gradlew && ./gradlew build --stacktrace
       - run: ./gradlew -p handrestock build --stacktrace
       - run: ./gradlew -p nametags build --stacktrace
+      - run: ./gradlew -p invhud build --stacktrace
       - name: Check mixin target exists
         run: |
           jar=$(find ~/.gradle/caches .gradle -path '*minecraft*' -name '*.jar' 2>/dev/null | grep -i -E 'clientonly|merged|client' | grep -v sources | head -20)
@@ -28,6 +29,7 @@ jobs:
             build/libs/*.jar
             handrestock/build/libs/*.jar
             nametags/build/libs/*.jar
+            invhud/build/libs/*.jar
       - name: Commit jar to download/ folder
         if: github.event_name == 'push'
         run: |
@@ -35,6 +37,7 @@ jobs:
           cp build/libs/clipmod-*.jar download/clipmod-1.21.11.jar
           cp handrestock/build/libs/handrestock-*.jar download/handrestock-1.21.11.jar
           cp nametags/build/libs/nametags-*.jar download/nametags-1.21.11.jar
+          cp invhud/build/libs/invhud-*.jar download/invhud-1.21.11.jar
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add download/

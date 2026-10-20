@@ -1,0 +1,19 @@
+{
+	"schemaVersion": 1,
+	"id": "invhud",
+	"version": "${version}",
+	"name": "Inventory HUD",
+	"description": "Shows your inventory, armor and offhand on screen while you play.",
+	"authors": ["bythahat"],
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["dev.invhud.InvHud"]
+	},
+	"depends": {
+		"fabricloader": ">=0.17.0",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
