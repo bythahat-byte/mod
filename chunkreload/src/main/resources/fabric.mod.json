@@ -1,0 +1,19 @@
+{
+	"schemaVersion": 1,
+	"id": "chunkreload",
+	"version": "${version}",
+	"name": "Chunk Reload",
+	"description": "Reload all chunks (like F3+A) with a single key or /reloadchunks.",
+	"authors": ["bythahat"],
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["dev.chunkreload.ChunkReload"]
+	},
+	"depends": {
+		"fabricloader": ">=0.17.0",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
