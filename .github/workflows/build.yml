@@ -18,6 +18,7 @@ jobs:
       - run: ./gradlew -p nametags build --stacktrace
       - run: ./gradlew -p invhud build --stacktrace
       - run: ./gradlew -p chunkreload build --stacktrace
+      - run: ./gradlew -p peek build --stacktrace
       - name: Check mixin target exists
         run: |
           jar=$(find ~/.gradle/caches .gradle -path '*minecraft*' -name '*.jar' 2>/dev/null | grep -i -E 'clientonly|merged|client' | grep -v sources | head -20)
@@ -32,6 +33,7 @@ jobs:
             nametags/build/libs/*.jar
             invhud/build/libs/*.jar
             chunkreload/build/libs/*.jar
+            peek/build/libs/*.jar
       - name: Commit jar to download/ folder
         if: github.event_name == 'push'
         run: |
@@ -41,6 +43,7 @@ jobs:
           cp nametags/build/libs/nametags-*.jar download/nametags-1.21.11.jar
           cp invhud/build/libs/invhud-*.jar download/invhud-1.21.11.jar
           cp chunkreload/build/libs/chunkreload-*.jar download/chunkreload-1.21.11.jar
+          cp peek/build/libs/peek-*.jar download/peek-1.21.11.jar
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add download/
