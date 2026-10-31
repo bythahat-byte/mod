@@ -1,0 +1,19 @@
+{
+	"schemaVersion": 1,
+	"id": "boatsniper",
+	"version": "${version}",
+	"name": "Boat Sniper",
+	"description": "Shot marker, speed HUD and forward-only bow release for boat-cannon sniping.",
+	"authors": ["bythahat"],
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["dev.boatsniper.BoatSniper"]
+	},
+	"depends": {
+		"fabricloader": ">=0.17.0",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
