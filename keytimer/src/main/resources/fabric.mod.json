@@ -1,0 +1,19 @@
+{
+	"schemaVersion": 1,
+	"id": "keytimer",
+	"version": "${version}",
+	"name": "Key Timer",
+	"description": "Presses a list of keys one after another with a set wait after each (e.g. 1, wait 60s, 2, ...).",
+	"authors": ["bythahat"],
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["dev.keytimer.KeyTimer"]
+	},
+	"depends": {
+		"fabricloader": ">=0.17.0",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
