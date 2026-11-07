@@ -81,15 +81,17 @@ public final class FrameEncoder {
 	}
 
 	/**
-	 * Queues a top-down BGRA frame (already scaled on the GPU) for encoding.
-	 * Ownership of {@code pixels} passes to the encoder.
+	 * Queues a BGRA frame for encoding. Normally the frame is already top-down and clip-sized
+	 * (scaled on the GPU); in compatibility mode it is the raw bottom-up window and is flipped and
+	 * scaled to {@code outWidth}x{@code outHeight} here. Ownership of {@code pixels} passes to the encoder.
 	 */
-	public void submit(byte[] pixels, int width, int height, long timestamp, float quality) {
+	public void submit(byte[] pixels, int width, int height, long timestamp, float quality,
+			int outWidth, int outHeight, boolean bottomUp) {
 		executor.execute(() -> {
 			try {
 				Worker w = workers.get();
-				byte[] jpeg = w.encode(pixels, width, height, quality);
-				buffer.add(new EncodedFrame(timestamp, width, height, jpeg));
+				byte[] jpeg = w.encode(pixels, width, height, quality, outWidth, outHeight, bottomUp);
+				buffer.add(new EncodedFrame(timestamp, outWidth, outHeight, jpeg));
 			} catch (Throwable t) {
 				dev.clipmod.ClipMod.LOGGER.error("Failed to encode frame", t);
 			} finally {
@@ -109,19 +111,39 @@ public final class FrameEncoder {
 		return new int[] {Math.max(2, outW & ~1), Math.max(2, outH & ~1)};
 	}
 
-	/** Per-thread reusable image and JPEG writer. */
+	/** Per-thread reusable images and JPEG writer. */
 	private static final class Worker {
 		private BufferedImage image;
+		private BufferedImage scaled;
 		private ImageWriter writer;
 		private final ByteArrayOutputStream bytes = new ByteArrayOutputStream(256 * 1024);
 
-		byte[] encode(byte[] bgra, int width, int height, float quality) throws Exception {
+		byte[] encode(byte[] bgra, int width, int height, float quality, int outWidth, int outHeight, boolean bottomUp) throws Exception {
 			if (image == null || image.getWidth() != width || image.getHeight() != height) {
 				image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 			}
 			int[] pixels = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
 			// BGRA bytes read as little-endian ints are 0xAARRGGBB; TYPE_INT_RGB ignores alpha
 			ByteBuffer.wrap(bgra, 0, width * height * 4).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().get(pixels, 0, width * height);
+
+			BufferedImage output = image;
+			if (bottomUp || outWidth != width || outHeight != height) {
+				if (scaled == null || scaled.getWidth() != outWidth || scaled.getHeight() != outHeight) {
+					scaled = new BufferedImage(outWidth, outHeight, BufferedImage.TYPE_INT_RGB);
+				}
+				java.awt.Graphics2D g = scaled.createGraphics();
+				try {
+					g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+					if (bottomUp) {
+						g.drawImage(image, 0, 0, outWidth, outHeight, 0, height, width, 0, null);
+					} else {
+						g.drawImage(image, 0, 0, outWidth, outHeight, 0, 0, width, height, null);
+					}
+				} finally {
+					g.dispose();
+				}
+				output = scaled;
+			}
 
 			if (writer == null) {
 				writer = ImageIO.getImageWritersByFormatName("jpeg").next();
@@ -132,7 +154,7 @@ public final class FrameEncoder {
 			bytes.reset();
 			try (ImageOutputStream ios = ImageIO.createImageOutputStream(bytes)) {
 				writer.setOutput(ios);
-				writer.write(null, new IIOImage(image, null, null), param);
+				writer.write(null, new IIOImage(output, null, null), param);
 			} finally {
 				writer.reset();
 			}

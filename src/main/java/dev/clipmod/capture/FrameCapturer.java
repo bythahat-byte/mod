@@ -32,6 +32,12 @@ public final class FrameCapturer {
 	private int fboWidth;
 	private int fboHeight;
 
+	/**
+	 * Compatibility mode: read the whole window and flip/scale it on the CPU instead of using an
+	 * offscreen framebuffer and a GPU blit. Slower, but uses only the most basic OpenGL calls.
+	 */
+	private boolean compatibilityMode;
+
 	// while recording, frames keep the recording's size even if the window is resized
 	private int forcedWidth;
 	private int forcedHeight;
@@ -41,6 +47,16 @@ public final class FrameCapturer {
 		for (int i = 0; i < SLOTS; i++) {
 			slots[i] = new Slot();
 		}
+	}
+
+	public boolean isCompatibilityMode() {
+		return compatibilityMode;
+	}
+
+	/** Switches to the simple capture path after the fast one failed. */
+	public void enableCompatibilityMode() {
+		reset();
+		compatibilityMode = true;
 	}
 
 	/** Makes every captured frame this size (0, 0 = follow the window). */
@@ -71,7 +87,13 @@ public final class FrameCapturer {
 		nextSlot = (nextSlot + 1) % SLOTS;
 
 		int[] out = forcedWidth > 0 ? new int[] {forcedWidth, forcedHeight} : FrameEncoder.outputSize(width, height, maxHeight);
-		request(slot, width, height, out[0], out[1], now);
+		clearGlErrors();
+		if (compatibilityMode) {
+			requestWindow(slot, width, height, out[0], out[1], now);
+		} else {
+			request(slot, width, height, out[0], out[1], now);
+		}
+		checkGlError(compatibilityMode ? "reading the window" : "scaling the frame");
 	}
 
 	private void collectFinished(float quality) {
@@ -89,6 +111,53 @@ public final class FrameCapturer {
 				continue;
 			}
 			slot.readOut(encoder, quality);
+		}
+	}
+
+	private static void clearGlErrors() {
+		for (int i = 0; i < 16 && GL11.glGetError() != GL11.GL_NO_ERROR; i++) {
+			// drop errors left over from earlier rendering so we only see our own
+		}
+	}
+
+	private static void checkGlError(String what) {
+		int error = GL11.glGetError();
+		if (error != GL11.GL_NO_ERROR) {
+			clearGlErrors();
+			throw new IllegalStateException("OpenGL error 0x" + Integer.toHexString(error) + " while " + what);
+		}
+	}
+
+	/** Compatibility path: async readback of the full window (bottom-up) into this slot's PBO. */
+	private void requestWindow(Slot slot, int width, int height, int outWidth, int outHeight, long timestamp) {
+		int prevReadFbo = GL11.glGetInteger(GL30.GL_READ_FRAMEBUFFER_BINDING);
+		int prevPack = GL11.glGetInteger(GL21.GL_PIXEL_PACK_BUFFER_BINDING);
+		int prevAlignment = GL11.glGetInteger(GL11.GL_PACK_ALIGNMENT);
+		try {
+			GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, 0);
+			GL11.glReadBuffer(GL11.GL_BACK);
+			int size = width * height * 4;
+			if (slot.pbo == 0) {
+				slot.pbo = GL15.glGenBuffers();
+			}
+			GL15.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, slot.pbo);
+			if (slot.pboSize != size) {
+				GL15.glBufferData(GL21.GL_PIXEL_PACK_BUFFER, size, GL15.GL_STREAM_READ);
+				slot.pboSize = size;
+			}
+			GL11.glPixelStorei(GL11.GL_PACK_ALIGNMENT, 4);
+			GL11.glReadPixels(0, 0, width, height, GL12.GL_BGRA, GL11.GL_UNSIGNED_BYTE, 0L);
+			slot.fence = GL32.glFenceSync(GL32.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+			slot.width = width;
+			slot.height = height;
+			slot.outWidth = outWidth;
+			slot.outHeight = outHeight;
+			slot.bottomUp = true;
+			slot.timestamp = timestamp;
+		} finally {
+			GL11.glPixelStorei(GL11.GL_PACK_ALIGNMENT, prevAlignment);
+			GL15.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, prevPack);
+			GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, prevReadFbo);
 		}
 	}
 
@@ -135,6 +204,9 @@ public final class FrameCapturer {
 			slot.fence = GL32.glFenceSync(GL32.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 			slot.width = outWidth;
 			slot.height = outHeight;
+			slot.outWidth = outWidth;
+			slot.outHeight = outHeight;
+			slot.bottomUp = false;
 			slot.timestamp = timestamp;
 		} finally {
 			GL11.glPixelStorei(GL11.GL_PACK_ALIGNMENT, prevAlignment);
@@ -187,6 +259,7 @@ public final class FrameCapturer {
 		}
 		nextSlot = 0;
 		nextCaptureAt = 0;
+		clearGlErrors();
 	}
 
 	private static final class Slot {
@@ -195,6 +268,9 @@ public final class FrameCapturer {
 		long fence;
 		int width;
 		int height;
+		int outWidth;
+		int outHeight;
+		boolean bottomUp;
 		long timestamp;
 
 		void readOut(FrameEncoder encoder, float quality) {
@@ -219,7 +295,7 @@ public final class FrameCapturer {
 				GL15.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, prevPack);
 			}
 			if (ok) {
-				encoder.submit(pixels, width, height, timestamp, quality);
+				encoder.submit(pixels, width, height, timestamp, quality, outWidth, outHeight, bottomUp);
 			} else {
 				encoder.giveBack(pixels);
 			}

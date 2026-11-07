@@ -52,6 +52,8 @@ public final class ClipMod implements ClientModInitializer {
 	private static FrameCapturer capturer;
 	private static boolean capturing;
 	private static boolean captureBroken;
+	/** Short description of the last capture error, shown in chat and /clip status. */
+	private static String captureError;
 	private static final ExecutorService SAVER = Executors.newSingleThreadExecutor(r -> {
 		Thread t = new Thread(r, "ClipMod Saver");
 		t.setDaemon(true);
@@ -136,8 +138,24 @@ public final class ClipMod implements ClientModInitializer {
 			capturer.onFrameEnd(window.getFramebufferWidth(), window.getFramebufferHeight(),
 					config.fps, config.maxHeight, config.quality);
 		} catch (Throwable t) {
+			captureError = t.getClass().getSimpleName() + (t.getMessage() != null ? ": " + t.getMessage() : "");
+			if (!capturer.isCompatibilityMode()) {
+				LOGGER.error("Fast frame capture failed, switching to compatibility mode", t);
+				try {
+					capturer.enableCompatibilityMode();
+				} catch (Throwable ignored) {
+				}
+				String message = captureError;
+				MinecraftClient.getInstance().execute(() -> chat(prefix()
+						.append(Text.literal("Fast capture didn't work on this setup (" + message
+								+ "), switched to compatibility mode.").formatted(Formatting.YELLOW))));
+				return;
+			}
 			captureBroken = true;
-			LOGGER.error("Frame capture failed, clipping is disabled for this session", t);
+			LOGGER.error("Frame capture failed in compatibility mode too, clipping is disabled for this session", t);
+			String message = captureError;
+			MinecraftClient.getInstance().execute(() -> chat(error("Frame capture stopped working: " + message
+					+ ". Please send this message to whoever made the mod.")));
 		}
 	}
 
@@ -145,7 +163,7 @@ public final class ClipMod implements ClientModInitializer {
 
 	private static void saveClip(int seconds, Consumer<Text> feedback) {
 		if (captureBroken) {
-			feedback.accept(error("Frame capture failed earlier, check the log."));
+			feedback.accept(error("Frame capture failed earlier: " + captureError));
 			return;
 		}
 		if (!config.enabled) {
@@ -191,7 +209,7 @@ public final class ClipMod implements ClientModInitializer {
 	/** Starts a long recording that begins with the replay buffer's last {@code bufferSeconds}. */
 	private static void startRecording(Consumer<Text> feedback) {
 		if (captureBroken) {
-			feedback.accept(error("Frame capture failed earlier, check the log."));
+			feedback.accept(error("Frame capture failed earlier: " + captureError));
 			return;
 		}
 		if (recorder != null) {
@@ -372,7 +390,9 @@ public final class ClipMod implements ClientModInitializer {
 	}
 
 	private static void status(Consumer<Text> f) {
-		f.accept(info("Replay buffer: " + (captureBroken ? "BROKEN (see log)" : config.enabled ? "ON" : "OFF")));
+		f.accept(info("Replay buffer: " + (captureBroken ? "BROKEN (" + captureError + ")" : config.enabled ? "ON" : "OFF")));
+		f.accept(line("Capture mode: " + (capturer.isCompatibilityMode() ? "compatibility" : "fast (GPU scaling)")
+				+ (captureError != null && !captureBroken ? ", last error: " + captureError : "")));
 		if (recorder != null) {
 			f.accept(line(String.format(Locale.ROOT, "Recording: %s so far, %.0f MB on disk",
 					formatTime(recorder.elapsedSeconds()), recorder.bytesWritten() / 1048576.0)));
