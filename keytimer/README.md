@@ -6,6 +6,9 @@ each: for example `1`, wait 60 s, `2`, wait 60 s, then (optionally) starts over.
 ```
 /keytimer add 1 60      press 1, then wait 60 seconds
 /keytimer add 2 60      press 2, then wait 60 seconds
+/keytimer hold d 15 15  hold d for 15 seconds, then wait 15 seconds
+/keytimer hold w 5 0    hold w for 5 seconds, then go straight to the next step
+/keytimer wait 10       just pause for 10 seconds
 /keytimer start         (or bind "Start/Stop Key Timer" in Controls)
 /keytimer stop
 /keytimer               list the steps

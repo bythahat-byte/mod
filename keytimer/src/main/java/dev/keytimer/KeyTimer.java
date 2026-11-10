@@ -39,13 +39,18 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.lit
 public final class KeyTimer implements ClientModInitializer {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-	/** One step: press {@code key}, then wait {@code waitSeconds} before the next step. */
+	/**
+	 * One step: press {@code key} (tap, or hold it down for {@code holdSeconds}), then wait
+	 * {@code waitSeconds} before the next step. A step with no key is just a pause.
+	 */
 	public static final class Step {
 		String key;
+		double holdSeconds;
 		double waitSeconds;
 
-		Step(String key, double waitSeconds) {
+		Step(String key, double holdSeconds, double waitSeconds) {
 			this.key = key;
+			this.holdSeconds = holdSeconds;
 			this.waitSeconds = waitSeconds;
 		}
 	}
@@ -63,8 +68,11 @@ public final class KeyTimer implements ClientModInitializer {
 	private static boolean running;
 	private static int stepIndex;
 	private static long nextStepAt;
-	/** Key held down this tick, released on the next one. */
+	/** Key tapped this tick, released on the next one. */
 	private static InputUtil.Key heldKey;
+	/** Key being held down for a "hold" step, and when to let go. */
+	private static InputUtil.Key holdingKey;
+	private static long holdUntil;
 
 	@Override
 	public void onInitializeClient() {
@@ -86,10 +94,29 @@ public final class KeyTimer implements ClientModInitializer {
 										+ "\". Use things like 1-9, a-z, space, left (mouse), right (mouse), f, q, e."));
 								return 0;
 							}
-							config.steps.add(new Step(key.toLowerCase(Locale.ROOT), DoubleArgumentType.getDouble(ctx, "waitSeconds")));
+							config.steps.add(new Step(key.toLowerCase(Locale.ROOT), 0, DoubleArgumentType.getDouble(ctx, "waitSeconds")));
 							save();
 							return list(ctx.getSource());
 						}))))
+				.then(literal("hold").then(argument("key", StringArgumentType.word())
+						.then(argument("holdSeconds", DoubleArgumentType.doubleArg(0.05, 86400))
+								.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+									String key = StringArgumentType.getString(ctx, "key");
+									if (parseKey(key) == null) {
+										ctx.getSource().sendError(Text.literal("Unknown key \"" + key
+												+ "\". Use things like 1-9, a-z, space, left (mouse), right (mouse), f, q, e."));
+										return 0;
+									}
+									config.steps.add(new Step(key.toLowerCase(Locale.ROOT),
+											DoubleArgumentType.getDouble(ctx, "holdSeconds"), DoubleArgumentType.getDouble(ctx, "waitSeconds")));
+									save();
+									return list(ctx.getSource());
+								})))))
+				.then(literal("wait").then(argument("seconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+					config.steps.add(new Step(null, 0, DoubleArgumentType.getDouble(ctx, "seconds")));
+					save();
+					return list(ctx.getSource());
+				})))
 				.then(literal("remove").then(argument("step", IntegerArgumentType.integer(1)).executes(ctx -> {
 					int i = IntegerArgumentType.getInteger(ctx, "step") - 1;
 					if (i >= config.steps.size()) {
@@ -143,7 +170,16 @@ public final class KeyTimer implements ClientModInitializer {
 			stop(null); // left the world
 			return;
 		}
-		if (System.nanoTime() < nextStepAt) {
+		long now = System.nanoTime();
+		if (holdingKey != null) {
+			if (now < holdUntil) {
+				KeyBinding.setKeyPressed(holdingKey, true); // keep it down even if a real key event reset it
+				return;
+			}
+			KeyBinding.setKeyPressed(holdingKey, false);
+			holdingKey = null;
+		}
+		if (now < nextStepAt) {
 			return;
 		}
 		if (stepIndex >= config.steps.size()) {
@@ -154,14 +190,21 @@ public final class KeyTimer implements ClientModInitializer {
 			stepIndex = 0;
 		}
 		Step step = config.steps.get(stepIndex);
-		InputUtil.Key key = parseKey(step.key);
+		InputUtil.Key key = step.key == null ? null : parseKey(step.key);
+		long start = now;
 		if (key != null) {
-			// same as a real key press: counts as "pressed" once and held for one tick
+			// same as a real key press: counts as "pressed" once and is held down
 			KeyBinding.setKeyPressed(key, true);
 			KeyBinding.onKeyPressed(key);
-			heldKey = key;
+			if (step.holdSeconds > 0) {
+				holdingKey = key;
+				holdUntil = now + (long) (step.holdSeconds * 1_000_000_000L);
+				start = holdUntil; // the wait starts once the key is let go
+			} else {
+				heldKey = key; // tap: released next tick
+			}
 		}
-		nextStepAt = System.nanoTime() + (long) (step.waitSeconds * 1_000_000_000L);
+		nextStepAt = start + (long) (step.waitSeconds * 1_000_000_000L);
 		stepIndex++;
 	}
 
@@ -183,6 +226,10 @@ public final class KeyTimer implements ClientModInitializer {
 		if (heldKey != null) {
 			KeyBinding.setKeyPressed(heldKey, false);
 			heldKey = null;
+		}
+		if (holdingKey != null) {
+			KeyBinding.setKeyPressed(holdingKey, false);
+			holdingKey = null;
 		}
 		if (was && feedback != null) {
 			feedback.accept(Text.literal("Key Timer stopped").formatted(Formatting.RED));
@@ -224,11 +271,14 @@ public final class KeyTimer implements ClientModInitializer {
 		}
 		for (int i = 0; i < config.steps.size(); i++) {
 			Step s = config.steps.get(i);
-			source.sendFeedback(Text.literal(String.format(Locale.ROOT, "  %d. press %s, then wait %ss",
-					i + 1, s.key, trim(s.waitSeconds))).formatted(Formatting.WHITE));
+			String what = s.key == null ? "pause"
+					: s.holdSeconds > 0 ? "hold " + s.key + " for " + trim(s.holdSeconds) + "s"
+					: "press " + s.key;
+			source.sendFeedback(Text.literal(String.format(Locale.ROOT, "  %d. %s, then wait %ss",
+					i + 1, what, trim(s.waitSeconds))).formatted(Formatting.WHITE));
 		}
 		source.sendFeedback(Text.literal("  loop: " + (config.loop ? "on" : "off")
-				+ "   /keytimer start | stop | add | remove <n> | clear | loop true|false").formatted(Formatting.DARK_GRAY));
+				+ "   /keytimer start | stop | add | hold | wait | remove <n> | clear | loop true|false").formatted(Formatting.DARK_GRAY));
 		return 1;
 	}
 
