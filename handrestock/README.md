@@ -19,3 +19,10 @@ Bind "Toggle Hand Restock" in Options → Controls → Key Binds to turn it on a
 Works in singleplayer and on servers (it uses normal inventory clicks). Main hand only.
 
 Build: `../gradlew -p handrestock build` → `build/libs/handrestock-<version>.jar`.
+
+## Switch before the stack runs out
+
+`/restock switchat 5` makes it jump to the next hotbar slot holding the same block once the stack in
+your hand is down to 5, so you never run dry while building. `/restock off` turns this off (the
+default), `/restock anyitem` switches to the next filled slot even if it holds something else,
+`/restock sameitem` switches back. `/restock` shows the settings (saved in `config/handrestock.json`).
