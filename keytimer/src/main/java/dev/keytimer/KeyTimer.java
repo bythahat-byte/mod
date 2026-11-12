@@ -159,6 +159,30 @@ public final class KeyTimer implements ClientModInitializer {
 							save();
 							return list(ctx.getSource());
 						}))))
+				.then(literal("edit").then(stepForms(argument("step", IntegerArgumentType.integer(1)), (ctx, step) -> {
+					int i = IntegerArgumentType.getInteger(ctx, "step") - 1;
+					if (i >= config.steps.size()) {
+						ctx.getSource().sendError(Text.literal("There is no step " + (i + 1)));
+						return 0;
+					}
+					stop(null);
+					config.steps.set(i, step);
+					save();
+					ctx.getSource().sendFeedback(Text.literal("Step " + (i + 1) + " is now: " + describe(step)).formatted(Formatting.GREEN));
+					return 1;
+				})))
+				.then(literal("insert").then(stepForms(argument("step", IntegerArgumentType.integer(1)), (ctx, step) -> {
+					int i = IntegerArgumentType.getInteger(ctx, "step") - 1;
+					if (i > config.steps.size()) {
+						ctx.getSource().sendError(Text.literal("There are only " + config.steps.size() + " steps"));
+						return 0;
+					}
+					stop(null);
+					config.steps.add(i, step);
+					save();
+					ctx.getSource().sendFeedback(Text.literal("Inserted step " + (i + 1) + ": " + describe(step)).formatted(Formatting.GREEN));
+					return 1;
+				})))
 				.then(literal("remove").then(argument("step", IntegerArgumentType.integer(1)).executes(ctx -> {
 					int i = IntegerArgumentType.getInteger(ctx, "step") - 1;
 					if (i >= config.steps.size()) {
@@ -382,8 +406,46 @@ public final class KeyTimer implements ClientModInitializer {
 			i += run - 1;
 		}
 		source.sendFeedback(Text.literal("  loop: " + (config.loop ? "on" : "off")
-				+ "   /keytimer start [save] | stop | add | hold | wait | repeat | remove <n> | clear | loop | save <name> | load <name> | saves").formatted(Formatting.DARK_GRAY));
+				+ "   /keytimer start [save] | stop | add | hold | wait | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
 		return 1;
+	}
+
+	private interface StepAction {
+		int run(com.mojang.brigadier.context.CommandContext<FabricClientCommandSource> ctx, Step step);
+	}
+
+	/** Adds the "hold <key> <hold> <wait>", "add <key> <wait>" and "wait <seconds>" forms under {@code node}. */
+	private static <T extends com.mojang.brigadier.builder.ArgumentBuilder<FabricClientCommandSource, T>> T stepForms(T node, StepAction action) {
+		return node
+				.then(literal("hold").then(argument("key", StringArgumentType.word())
+						.then(argument("holdSeconds", DoubleArgumentType.doubleArg(0.05, 86400))
+								.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+									String key = StringArgumentType.getString(ctx, "key");
+									if (parseKey(key) == null) {
+										ctx.getSource().sendError(Text.literal("Unknown key \"" + key + "\""));
+										return 0;
+									}
+									return action.run(ctx, new Step(key.toLowerCase(Locale.ROOT),
+											DoubleArgumentType.getDouble(ctx, "holdSeconds"), DoubleArgumentType.getDouble(ctx, "waitSeconds")));
+								})))))
+				.then(literal("add").then(argument("key", StringArgumentType.word())
+						.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+							String key = StringArgumentType.getString(ctx, "key");
+							if (parseKey(key) == null) {
+								ctx.getSource().sendError(Text.literal("Unknown key \"" + key + "\""));
+								return 0;
+							}
+							return action.run(ctx, new Step(key.toLowerCase(Locale.ROOT), 0, DoubleArgumentType.getDouble(ctx, "waitSeconds")));
+						}))))
+				.then(literal("wait").then(argument("seconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx ->
+						action.run(ctx, new Step(null, 0, DoubleArgumentType.getDouble(ctx, "seconds"))))));
+	}
+
+	private static String describe(Step s) {
+		String what = s.key == null ? "pause"
+				: s.holdSeconds > 0 ? "hold " + s.key + " for " + trim(s.holdSeconds) + "s"
+				: "press " + s.key;
+		return what + ", then wait " + trim(s.waitSeconds) + "s";
 	}
 
 	/** Replaces the current list with a save. */

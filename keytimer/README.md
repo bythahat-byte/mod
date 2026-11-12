@@ -13,6 +13,8 @@ each: for example `1`, wait 60 s, `2`, wait 60 s, then (optionally) starts over.
 /keytimer start         (or bind "Start/Stop Key Timer" in Controls)
 /keytimer stop
 /keytimer               list the steps
+/keytimer edit 16 hold s 2.3 0     replace step 16 with a new step (hold/add/wait forms)
+/keytimer insert 16 wait 2         put a new step before step 16
 /keytimer remove 2      remove step 2
 /keytimer clear         remove all steps
 /keytimer loop false    run the list once instead of repeating
