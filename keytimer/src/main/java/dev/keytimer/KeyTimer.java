@@ -117,6 +117,28 @@ public final class KeyTimer implements ClientModInitializer {
 					save();
 					return list(ctx.getSource());
 				})))
+				.then(literal("repeat").then(argument("times", IntegerArgumentType.integer(2, 1000))
+						.then(argument("lastSteps", IntegerArgumentType.integer(1, 1000)).executes(ctx -> {
+							int times = IntegerArgumentType.getInteger(ctx, "times");
+							int last = IntegerArgumentType.getInteger(ctx, "lastSteps");
+							if (last > config.steps.size()) {
+								ctx.getSource().sendError(Text.literal("There are only " + config.steps.size() + " steps"));
+								return 0;
+							}
+							if (config.steps.size() + last * (times - 1) > 5000) {
+								ctx.getSource().sendError(Text.literal("That would make too many steps (over 5000)"));
+								return 0;
+							}
+							// the last N steps end up happening `times` times in total
+							List<Step> block = new ArrayList<>(config.steps.subList(config.steps.size() - last, config.steps.size()));
+							for (int t = 1; t < times; t++) {
+								for (Step st : block) {
+									config.steps.add(new Step(st.key, st.holdSeconds, st.waitSeconds));
+								}
+							}
+							save();
+							return list(ctx.getSource());
+						}))))
 				.then(literal("remove").then(argument("step", IntegerArgumentType.integer(1)).executes(ctx -> {
 					int i = IntegerArgumentType.getInteger(ctx, "step") - 1;
 					if (i >= config.steps.size()) {
@@ -271,15 +293,25 @@ public final class KeyTimer implements ClientModInitializer {
 		}
 		for (int i = 0; i < config.steps.size(); i++) {
 			Step s = config.steps.get(i);
+			int run = 1;
+			while (i + run < config.steps.size() && same(config.steps.get(i + run), s)) {
+				run++;
+			}
 			String what = s.key == null ? "pause"
 					: s.holdSeconds > 0 ? "hold " + s.key + " for " + trim(s.holdSeconds) + "s"
 					: "press " + s.key;
-			source.sendFeedback(Text.literal(String.format(Locale.ROOT, "  %d. %s, then wait %ss",
-					i + 1, what, trim(s.waitSeconds))).formatted(Formatting.WHITE));
+			String number = run > 1 ? (i + 1) + "-" + (i + run) : String.valueOf(i + 1);
+			source.sendFeedback(Text.literal(String.format(Locale.ROOT, "  %s. %s, then wait %ss%s",
+					number, what, trim(s.waitSeconds), run > 1 ? "  (x" + run + ")" : "")).formatted(Formatting.WHITE));
+			i += run - 1;
 		}
 		source.sendFeedback(Text.literal("  loop: " + (config.loop ? "on" : "off")
-				+ "   /keytimer start | stop | add | hold | wait | remove <n> | clear | loop true|false").formatted(Formatting.DARK_GRAY));
+				+ "   /keytimer start | stop | add | hold | wait | repeat <times> <lastSteps> | remove <n> | clear | loop true|false").formatted(Formatting.DARK_GRAY));
 		return 1;
+	}
+
+	private static boolean same(Step a, Step b) {
+		return java.util.Objects.equals(a.key, b.key) && a.holdSeconds == b.holdSeconds && a.waitSeconds == b.waitSeconds;
 	}
 
 	private static String trim(double d) {

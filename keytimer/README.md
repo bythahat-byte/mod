@@ -9,6 +9,7 @@ each: for example `1`, wait 60 s, `2`, wait 60 s, then (optionally) starts over.
 /keytimer hold d 15 15  hold d for 15 seconds, then wait 15 seconds
 /keytimer hold w 5 0    hold w for 5 seconds, then go straight to the next step
 /keytimer wait 10       just pause for 10 seconds
+/keytimer repeat 11 2   make the last 2 steps happen 11 times in total
 /keytimer start         (or bind "Start/Stop Key Timer" in Controls)
 /keytimer stop
 /keytimer               list the steps
