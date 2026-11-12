@@ -55,10 +55,30 @@ public final class KeyTimer implements ClientModInitializer {
 		}
 	}
 
+	/** A saved list of steps. */
+	public static final class Saved {
+		List<Step> steps = new ArrayList<>();
+		boolean loop = true;
+	}
+
 	public static final class Config {
 		List<Step> steps = new ArrayList<>();
 		/** Start over from the first step after the last one. */
 		boolean loop = true;
+		/** Named saves, e.g. "1" or "cowfarm". */
+		java.util.Map<String, Saved> saves = new java.util.TreeMap<>();
+	}
+
+	private static List<Step> copySteps(List<Step> steps) {
+		List<Step> out = new ArrayList<>();
+		for (Step st : steps) {
+			out.add(new Step(st.key, st.holdSeconds, st.waitSeconds));
+		}
+		return out;
+	}
+
+	private static com.mojang.brigadier.suggestion.SuggestionProvider<FabricClientCommandSource> saveNames() {
+		return (ctx, builder) -> net.minecraft.command.CommandSource.suggestMatching(config.saves.keySet(), builder);
 	}
 
 	private static Config config = new Config();
@@ -164,7 +184,63 @@ public final class KeyTimer implements ClientModInitializer {
 				.then(literal("start").executes(ctx -> {
 					start(ctx.getSource()::sendFeedback);
 					return 1;
+				}).then(argument("save", StringArgumentType.word()).suggests(saveNames()).executes(ctx -> {
+					if (!loadSave(StringArgumentType.getString(ctx, "save"), ctx.getSource())) {
+						return 0;
+					}
+					start(ctx.getSource()::sendFeedback);
+					return 1;
+				})))
+				.then(literal("save").then(argument("name", StringArgumentType.word()).suggests(saveNames()).executes(ctx -> {
+					String name = StringArgumentType.getString(ctx, "name");
+					if (config.steps.isEmpty()) {
+						ctx.getSource().sendError(Text.literal("There are no steps to save"));
+						return 0;
+					}
+					Saved saved = new Saved();
+					saved.steps = copySteps(config.steps);
+					saved.loop = config.loop;
+					boolean replaced = config.saves.put(name, saved) != null;
+					save();
+					ctx.getSource().sendFeedback(Text.literal((replaced ? "Overwrote" : "Saved") + " \"" + name + "\" ("
+							+ saved.steps.size() + " steps)").formatted(Formatting.GREEN));
+					return 1;
+				})))
+				.then(literal("load").then(argument("name", StringArgumentType.word()).suggests(saveNames()).executes(ctx -> {
+					if (!loadSave(StringArgumentType.getString(ctx, "name"), ctx.getSource())) {
+						return 0;
+					}
+					return list(ctx.getSource());
+				})))
+				.then(literal("saves").executes(ctx -> {
+					FabricClientCommandSource src = ctx.getSource();
+					if (config.saves.isEmpty()) {
+						src.sendFeedback(Text.literal("No saves yet. Save the current list with /keytimer save <name>").formatted(Formatting.GRAY));
+						return 1;
+					}
+					src.sendFeedback(Text.literal("Key Timer saves:").formatted(Formatting.GOLD));
+					for (java.util.Map.Entry<String, Saved> e : config.saves.entrySet()) {
+						double total = 0;
+						for (Step st : e.getValue().steps) {
+							total += st.holdSeconds + st.waitSeconds;
+						}
+						src.sendFeedback(Text.literal(String.format(Locale.ROOT, "  %s: %d steps, about %s%s",
+								e.getKey(), e.getValue().steps.size(), duration(total), e.getValue().loop ? ", loops" : ""))
+								.formatted(Formatting.WHITE));
+					}
+					src.sendFeedback(Text.literal("  /keytimer load <name> | start <name> | delete <name>").formatted(Formatting.DARK_GRAY));
+					return 1;
 				}))
+				.then(literal("delete").then(argument("name", StringArgumentType.word()).suggests(saveNames()).executes(ctx -> {
+					String name = StringArgumentType.getString(ctx, "name");
+					if (config.saves.remove(name) == null) {
+						ctx.getSource().sendError(Text.literal("There is no save called \"" + name + "\""));
+						return 0;
+					}
+					save();
+					ctx.getSource().sendFeedback(Text.literal("Deleted save \"" + name + "\"").formatted(Formatting.YELLOW));
+					return 1;
+				})))
 				.then(literal("stop").executes(ctx -> {
 					stop(ctx.getSource()::sendFeedback);
 					return 1;
@@ -306,8 +382,28 @@ public final class KeyTimer implements ClientModInitializer {
 			i += run - 1;
 		}
 		source.sendFeedback(Text.literal("  loop: " + (config.loop ? "on" : "off")
-				+ "   /keytimer start | stop | add | hold | wait | repeat <times> <lastSteps> | remove <n> | clear | loop true|false").formatted(Formatting.DARK_GRAY));
+				+ "   /keytimer start [save] | stop | add | hold | wait | repeat | remove <n> | clear | loop | save <name> | load <name> | saves").formatted(Formatting.DARK_GRAY));
 		return 1;
+	}
+
+	/** Replaces the current list with a save. */
+	private static boolean loadSave(String name, FabricClientCommandSource source) {
+		Saved saved = config.saves.get(name);
+		if (saved == null) {
+			source.sendError(Text.literal("There is no save called \"" + name + "\". See /keytimer saves"));
+			return false;
+		}
+		stop(null);
+		config.steps = copySteps(saved.steps);
+		config.loop = saved.loop;
+		save();
+		source.sendFeedback(Text.literal("Loaded \"" + name + "\"").formatted(Formatting.GREEN));
+		return true;
+	}
+
+	private static String duration(double seconds) {
+		long s = Math.round(seconds);
+		return s >= 60 ? (s / 60) + "m " + (s % 60) + "s" : s + "s";
 	}
 
 	private static boolean same(Step a, Step b) {
@@ -330,6 +426,9 @@ public final class KeyTimer implements ClientModInitializer {
 		}
 		if (config.steps == null) {
 			config.steps = new ArrayList<>();
+		}
+		if (config.saves == null) {
+			config.saves = new java.util.TreeMap<>();
 		}
 	}
 

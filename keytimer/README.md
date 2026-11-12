@@ -22,3 +22,13 @@ Keys: `1`-`9`, `a`-`z`, `space`, `left`/`right`/`middle` (mouse buttons), or any
 such as `key.keyboard.f6`. The press acts like you pressing the key, so it does whatever that key is
 bound to. Steps are saved in `config/keytimer.json`. It stops when you leave the world.
 Some servers don't allow macros; check their rules.
+
+## Saves
+
+```
+/keytimer save 1        save the current list as "1" (any name works, e.g. cowfarm)
+/keytimer saves         list your saves
+/keytimer load 1        replace the current list with save "1"
+/keytimer start 1       load save "1" and start it
+/keytimer delete 1      delete save "1"
+```
