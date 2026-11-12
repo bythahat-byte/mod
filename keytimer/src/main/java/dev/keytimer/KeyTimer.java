@@ -13,6 +13,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
@@ -47,11 +48,25 @@ public final class KeyTimer implements ClientModInitializer {
 		String key;
 		double holdSeconds;
 		double waitSeconds;
+		/** For "move" steps: walk this many blocks with a movement key (0 = not a move step). */
+		double blocks;
 
 		Step(String key, double holdSeconds, double waitSeconds) {
 			this.key = key;
 			this.holdSeconds = holdSeconds;
 			this.waitSeconds = waitSeconds;
+		}
+
+		static Step move(String key, double blocks, double waitSeconds) {
+			Step step = new Step(key, 0, waitSeconds);
+			step.blocks = blocks;
+			return step;
+		}
+
+		Step copy() {
+			Step step = new Step(key, holdSeconds, waitSeconds);
+			step.blocks = blocks;
+			return step;
 		}
 	}
 
@@ -72,7 +87,7 @@ public final class KeyTimer implements ClientModInitializer {
 	private static List<Step> copySteps(List<Step> steps) {
 		List<Step> out = new ArrayList<>();
 		for (Step st : steps) {
-			out.add(new Step(st.key, st.holdSeconds, st.waitSeconds));
+			out.add(st.copy());
 		}
 		return out;
 	}
@@ -93,6 +108,19 @@ public final class KeyTimer implements ClientModInitializer {
 	/** Key being held down for a "hold" step, and when to let go. */
 	private static InputUtil.Key holdingKey;
 	private static long holdUntil;
+
+	// "move" steps: walk until the target block centre, then let go so the slide stops you on it
+	/**
+	 * After letting go, ground friction keeps you sliding: each tick you move by your velocity and
+	 * it shrinks to 0.546x (0.6 block slipperiness x 0.91). That adds up to velocity / (1 - 0.546).
+	 */
+	private static final double SLIDE_FACTOR = 1.0 / (1.0 - 0.546);
+	private static boolean moving;
+	private static boolean moveOnX;
+	private static int moveSign;
+	private static double moveTarget;
+	private static long moveDeadline;
+	private static long moveWaitNanos;
 
 	@Override
 	public void onInitializeClient() {
@@ -137,6 +165,11 @@ public final class KeyTimer implements ClientModInitializer {
 					save();
 					return list(ctx.getSource());
 				})))
+				.then(moveForm((ctx, step) -> {
+					config.steps.add(step);
+					save();
+					return list(ctx.getSource());
+				}))
 				.then(literal("repeat").then(argument("times", IntegerArgumentType.integer(2, 1000))
 						.then(argument("lastSteps", IntegerArgumentType.integer(1, 1000)).executes(ctx -> {
 							int times = IntegerArgumentType.getInteger(ctx, "times");
@@ -153,7 +186,7 @@ public final class KeyTimer implements ClientModInitializer {
 							List<Step> block = new ArrayList<>(config.steps.subList(config.steps.size() - last, config.steps.size()));
 							for (int t = 1; t < times; t++) {
 								for (Step st : block) {
-									config.steps.add(new Step(st.key, st.holdSeconds, st.waitSeconds));
+									config.steps.add(st.copy());
 								}
 							}
 							save();
@@ -246,7 +279,7 @@ public final class KeyTimer implements ClientModInitializer {
 					for (java.util.Map.Entry<String, Saved> e : config.saves.entrySet()) {
 						double total = 0;
 						for (Step st : e.getValue().steps) {
-							total += st.holdSeconds + st.waitSeconds;
+							total += st.holdSeconds + st.waitSeconds + st.blocks / 4.317;
 						}
 						src.sendFeedback(Text.literal(String.format(Locale.ROOT, "  %s: %d steps, about %s%s",
 								e.getKey(), e.getValue().steps.size(), duration(total), e.getValue().loop ? ", loops" : ""))
@@ -293,6 +326,21 @@ public final class KeyTimer implements ClientModInitializer {
 			return;
 		}
 		long now = System.nanoTime();
+		if (holdingKey != null && moving) {
+			ClientPlayerEntity player = client.player;
+			double pos = moveOnX ? player.getX() : player.getZ();
+			double vel = Math.max(0, (moveOnX ? player.getVelocity().x : player.getVelocity().z) * moveSign);
+			double error = (moveTarget - pos) * moveSign - vel * SLIDE_FACTOR; // where we'd stop if we let go now
+			// keep going while one more tick (moving about vel / 0.546) gets the stop closer to the target
+			if (error > vel / 0.546 / 2 && now < moveDeadline) {
+				KeyBinding.setKeyPressed(holdingKey, true);
+				return;
+			}
+			KeyBinding.setKeyPressed(holdingKey, false);
+			holdingKey = null;
+			moving = false;
+			nextStepAt = now + moveWaitNanos;
+		}
 		if (holdingKey != null) {
 			if (now < holdUntil) {
 				KeyBinding.setKeyPressed(holdingKey, true); // keep it down even if a real key event reset it
@@ -318,7 +366,15 @@ public final class KeyTimer implements ClientModInitializer {
 			// same as a real key press: counts as "pressed" once and is held down
 			KeyBinding.setKeyPressed(key, true);
 			KeyBinding.onKeyPressed(key);
-			if (step.holdSeconds > 0) {
+			if (step.blocks > 0) {
+				startMove(client.player, step);
+				holdingKey = key;
+				moving = true;
+				moveWaitNanos = (long) (step.waitSeconds * 1_000_000_000L);
+				nextStepAt = Long.MAX_VALUE; // set when the move finishes
+				stepIndex++;
+				return;
+			} else if (step.holdSeconds > 0) {
 				holdingKey = key;
 				holdUntil = now + (long) (step.holdSeconds * 1_000_000_000L);
 				start = holdUntil; // the wait starts once the key is let go
@@ -328,6 +384,34 @@ public final class KeyTimer implements ClientModInitializer {
 		}
 		nextStepAt = start + (long) (step.waitSeconds * 1_000_000_000L);
 		stepIndex++;
+	}
+
+	/**
+	 * Works out which way the movement key takes you (from where you're facing), snaps to the
+	 * nearest block axis, and aims for the centre of the block {@code blocks} away from the
+	 * centre of the block you're standing in. Aiming at block centres means small errors
+	 * don't add up from one move to the next.
+	 */
+	private static void startMove(ClientPlayerEntity player, Step step) {
+		double yaw = Math.toRadians(player.getYaw());
+		double fx = -Math.sin(yaw), fz = Math.cos(yaw); // forward
+		double lx = Math.cos(yaw), lz = Math.sin(yaw);  // left
+		double dx, dz;
+		switch (step.key) {
+			case "w" -> { dx = fx; dz = fz; }
+			case "s" -> { dx = -fx; dz = -fz; }
+			case "a" -> { dx = lx; dz = lz; }
+			default -> { dx = -lx; dz = -lz; } // d
+		}
+		moveOnX = Math.abs(dx) >= Math.abs(dz);
+		moveSign = (int) Math.signum(moveOnX ? dx : dz);
+		if (moveSign == 0) {
+			moveSign = 1;
+		}
+		double pos = moveOnX ? player.getX() : player.getZ();
+		moveTarget = Math.floor(pos) + 0.5 + moveSign * step.blocks;
+		// give up if blocked (at least 2 blocks/second plus a couple of seconds' slack)
+		moveDeadline = System.nanoTime() + (long) ((step.blocks / 2.0 + 2.0) * 1_000_000_000L);
 	}
 
 	private static void start(java.util.function.Consumer<Text> feedback) {
@@ -353,6 +437,7 @@ public final class KeyTimer implements ClientModInitializer {
 			KeyBinding.setKeyPressed(holdingKey, false);
 			holdingKey = null;
 		}
+		moving = false;
 		if (was && feedback != null) {
 			feedback.accept(Text.literal("Key Timer stopped").formatted(Formatting.RED));
 		}
@@ -398,6 +483,7 @@ public final class KeyTimer implements ClientModInitializer {
 				run++;
 			}
 			String what = s.key == null ? "pause"
+					: s.blocks > 0 ? "move " + s.key + " " + trim(s.blocks) + " blocks"
 					: s.holdSeconds > 0 ? "hold " + s.key + " for " + trim(s.holdSeconds) + "s"
 					: "press " + s.key;
 			String number = run > 1 ? (i + 1) + "-" + (i + run) : String.valueOf(i + 1);
@@ -406,7 +492,7 @@ public final class KeyTimer implements ClientModInitializer {
 			i += run - 1;
 		}
 		source.sendFeedback(Text.literal("  loop: " + (config.loop ? "on" : "off")
-				+ "   /keytimer start [save] | stop | add | hold | wait | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
+				+ "   /keytimer start [save] | stop | add | hold | move | wait | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
 		return 1;
 	}
 
@@ -438,11 +524,29 @@ public final class KeyTimer implements ClientModInitializer {
 							return action.run(ctx, new Step(key.toLowerCase(Locale.ROOT), 0, DoubleArgumentType.getDouble(ctx, "waitSeconds")));
 						}))))
 				.then(literal("wait").then(argument("seconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx ->
-						action.run(ctx, new Step(null, 0, DoubleArgumentType.getDouble(ctx, "seconds"))))));
+						action.run(ctx, new Step(null, 0, DoubleArgumentType.getDouble(ctx, "seconds"))))))
+				.then(moveForm(action));
+	}
+
+	/** "move <w|a|s|d> <blocks> <waitSeconds>": walk an exact number of blocks. */
+	private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> moveForm(StepAction action) {
+		return literal("move").then(argument("key", StringArgumentType.word())
+				.suggests((ctx, b) -> net.minecraft.command.CommandSource.suggestMatching(List.of("w", "a", "s", "d"), b))
+				.then(argument("blocks", DoubleArgumentType.doubleArg(0.5, 10000))
+						.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+							String key = StringArgumentType.getString(ctx, "key").toLowerCase(Locale.ROOT);
+							if (!List.of("w", "a", "s", "d").contains(key)) {
+								ctx.getSource().sendError(Text.literal("move only works with w, a, s or d"));
+								return 0;
+							}
+							return action.run(ctx, Step.move(key, DoubleArgumentType.getDouble(ctx, "blocks"),
+									DoubleArgumentType.getDouble(ctx, "waitSeconds")));
+						}))));
 	}
 
 	private static String describe(Step s) {
 		String what = s.key == null ? "pause"
+				: s.blocks > 0 ? "move " + s.key + " " + trim(s.blocks) + " blocks"
 				: s.holdSeconds > 0 ? "hold " + s.key + " for " + trim(s.holdSeconds) + "s"
 				: "press " + s.key;
 		return what + ", then wait " + trim(s.waitSeconds) + "s";
@@ -469,7 +573,8 @@ public final class KeyTimer implements ClientModInitializer {
 	}
 
 	private static boolean same(Step a, Step b) {
-		return java.util.Objects.equals(a.key, b.key) && a.holdSeconds == b.holdSeconds && a.waitSeconds == b.waitSeconds;
+		return java.util.Objects.equals(a.key, b.key) && a.holdSeconds == b.holdSeconds && a.waitSeconds == b.waitSeconds
+				&& a.blocks == b.blocks;
 	}
 
 	private static String trim(double d) {
