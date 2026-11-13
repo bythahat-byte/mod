@@ -21,6 +21,7 @@ jobs:
       - run: ./gradlew -p peek build --stacktrace
       - run: ./gradlew -p boatsniper build --stacktrace
       - run: ./gradlew -p keytimer build --stacktrace
+      - run: ./gradlew -p autodrop build --stacktrace
       - name: Check mixin target exists
         run: |
           jar=$(find ~/.gradle/caches .gradle -path '*minecraft*' -name '*.jar' 2>/dev/null | grep -i -E 'clientonly|merged|client' | grep -v sources | head -20)
@@ -38,6 +39,7 @@ jobs:
             peek/build/libs/*.jar
             boatsniper/build/libs/*.jar
             keytimer/build/libs/*.jar
+            autodrop/build/libs/*.jar
       - name: Commit jar to download/ folder
         if: github.event_name == 'push'
         run: |
@@ -50,6 +52,7 @@ jobs:
           cp peek/build/libs/peek-*.jar download/peek-1.21.11.jar
           cp boatsniper/build/libs/boatsniper-*.jar download/boatsniper-1.21.11.jar
           cp keytimer/build/libs/keytimer-*.jar download/keytimer-1.21.11.jar
+          cp autodrop/build/libs/autodrop-*.jar download/autodrop-1.21.11.jar
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add download/

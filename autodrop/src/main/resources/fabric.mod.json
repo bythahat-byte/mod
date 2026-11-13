@@ -1,0 +1,19 @@
+{
+	"schemaVersion": 1,
+	"id": "autodrop",
+	"version": "${version}",
+	"name": "Auto Drop",
+	"description": "Opens your inventory and drops the items in chosen slots, on a key, a command or a timer.",
+	"authors": ["bythahat"],
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["dev.autodrop.AutoDrop"]
+	},
+	"depends": {
+		"fabricloader": ">=0.17.0",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
