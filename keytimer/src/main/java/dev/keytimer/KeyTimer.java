@@ -53,6 +53,8 @@ public final class KeyTimer implements ClientModInitializer {
 		/** Inventory steps: "refill" (item -> hotbar) or "crafthay" (hay bales -> wheat). */
 		String action;
 		String item;
+		/** Inventory steps: how many stacks to handle (0 = all). */
+		int stacks;
 
 		Step(String key, double holdSeconds, double waitSeconds) {
 			this.key = key;
@@ -73,11 +75,17 @@ public final class KeyTimer implements ClientModInitializer {
 			return step;
 		}
 
+		Step withStacks(int stacks) {
+			this.stacks = stacks;
+			return this;
+		}
+
 		Step copy() {
 			Step step = new Step(key, holdSeconds, waitSeconds);
 			step.blocks = blocks;
 			step.action = action;
 			step.item = item;
+			step.stacks = stacks;
 			return step;
 		}
 	}
@@ -452,11 +460,13 @@ public final class KeyTimer implements ClientModInitializer {
 		if ("refill".equals(step.action)) {
 			net.minecraft.item.Item item = parseItem(step.item);
 			int[] guard = {0};
-			inventoryWork = () -> item != null && guard[0]++ < 40 && refillOnce(client, item);
+			int limit = step.stacks > 0 ? step.stacks : 40;
+			inventoryWork = () -> item != null && guard[0]++ < limit && refillOnce(client, item);
 		} else if ("crafthay".equals(step.action)) {
-			int[] stage = {0};
+			int[] stage = {0, 0}; // [routine stage, hay stacks started]
 			int[] guard = {0};
-			inventoryWork = () -> guard[0]++ < 400 && craftHayStep(client, stage);
+			int limit = step.stacks > 0 ? step.stacks : Integer.MAX_VALUE;
+			inventoryWork = () -> guard[0]++ < 400 && craftHayStep(client, stage, limit);
 		} else {
 			inventoryWork = () -> false;
 		}
@@ -524,12 +534,12 @@ public final class KeyTimer implements ClientModInitializer {
 	 * 0 pick up a hay stack, 1 put it in the grid, 2 shift-click the result (crafts as many as
 	 * fit), 3 shift-click leftover hay back. Repeats while there's room for at least 9 wheat.
 	 */
-	private static boolean craftHayStep(MinecraftClient client, int[] stage) {
+	private static boolean craftHayStep(MinecraftClient client, int[] stage, int maxStacks) {
 		net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
 		net.minecraft.screen.slot.SlotActionType pickup = net.minecraft.screen.slot.SlotActionType.PICKUP;
 		switch (stage[0]) {
 			case 0 -> {
-				if (wheatSpace(inv) < 9) {
+				if (wheatSpace(inv) < 9 || stage[1] >= maxStacks) {
 					return false;
 				}
 				for (int i = 0; i < 36; i++) {
@@ -537,6 +547,7 @@ public final class KeyTimer implements ClientModInitializer {
 						int screenSlot = i < 9 ? 36 + i : i;
 						click(client, screenSlot, 0, pickup); // pick up the stack
 						stage[0] = 1;
+						stage[1]++;
 						return true;
 					}
 				}
@@ -679,8 +690,8 @@ public final class KeyTimer implements ClientModInitializer {
 			while (i + run < config.steps.size() && same(config.steps.get(i + run), s)) {
 				run++;
 			}
-			String what = "refill".equals(s.action) ? "move all " + s.item + " to the hotbar"
-					: "crafthay".equals(s.action) ? "craft hay bales into wheat"
+			String what = "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ") + s.item + " to the hotbar"
+					: "crafthay".equals(s.action) ? "craft " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "") + "hay bales into wheat"
 					: s.key == null ? "pause"
 					: s.blocks > 0 ? "move " + s.key + " " + trim(s.blocks) + " blocks"
 					: s.holdSeconds > 0 ? "hold " + s.key + " for " + trim(s.holdSeconds) + "s"
@@ -733,20 +744,28 @@ public final class KeyTimer implements ClientModInitializer {
 	private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> refillForm(StepAction action) {
 		return literal("refill").then(argument("item", StringArgumentType.word())
 				.suggests((ctx, b) -> net.minecraft.command.CommandSource.suggestMatching(List.of("wheat", "hay_block", "carrot", "potato", "beetroot", "seagrass"), b))
-				.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
-					String item = StringArgumentType.getString(ctx, "item").toLowerCase(Locale.ROOT);
-					if (parseItem(item) == null) {
-						ctx.getSource().sendError(Text.literal("Unknown item \"" + item + "\" (use names like wheat or hay_block)"));
-						return 0;
-					}
-					return action.run(ctx, Step.inventory("refill", item, DoubleArgumentType.getDouble(ctx, "waitSeconds")));
-				})));
+				.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400))
+						.executes(ctx -> refill(ctx, action, 0))
+						.then(argument("stacks", IntegerArgumentType.integer(1, 36))
+								.executes(ctx -> refill(ctx, action, IntegerArgumentType.getInteger(ctx, "stacks"))))));
+	}
+
+	private static int refill(com.mojang.brigadier.context.CommandContext<FabricClientCommandSource> ctx, StepAction action, int stacks) {
+		String item = StringArgumentType.getString(ctx, "item").toLowerCase(Locale.ROOT);
+		if (parseItem(item) == null) {
+			ctx.getSource().sendError(Text.literal("Unknown item \"" + item + "\" (use names like wheat or hay_block)"));
+			return 0;
+		}
+		return action.run(ctx, Step.inventory("refill", item, DoubleArgumentType.getDouble(ctx, "waitSeconds")).withStacks(stacks));
 	}
 
 	/** "crafthay <waitSeconds>": craft hay bales into wheat while there's room. */
 	private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> craftHayForm(StepAction action) {
-		return literal("crafthay").then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx ->
-				action.run(ctx, Step.inventory("crafthay", null, DoubleArgumentType.getDouble(ctx, "waitSeconds")))));
+		return literal("crafthay").then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400))
+				.executes(ctx -> action.run(ctx, Step.inventory("crafthay", null, DoubleArgumentType.getDouble(ctx, "waitSeconds"))))
+				.then(argument("stacks", IntegerArgumentType.integer(1, 36)).executes(ctx ->
+						action.run(ctx, Step.inventory("crafthay", null, DoubleArgumentType.getDouble(ctx, "waitSeconds"))
+								.withStacks(IntegerArgumentType.getInteger(ctx, "stacks"))))));
 	}
 
 	/** "move <w|a|s|d> <blocks> <waitSeconds>": walk an exact number of blocks. */
@@ -766,8 +785,8 @@ public final class KeyTimer implements ClientModInitializer {
 	}
 
 	private static String describe(Step s) {
-		String what = "refill".equals(s.action) ? "move all " + s.item + " to the hotbar"
-					: "crafthay".equals(s.action) ? "craft hay bales into wheat"
+		String what = "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ") + s.item + " to the hotbar"
+					: "crafthay".equals(s.action) ? "craft " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "") + "hay bales into wheat"
 					: s.key == null ? "pause"
 				: s.blocks > 0 ? "move " + s.key + " " + trim(s.blocks) + " blocks"
 				: s.holdSeconds > 0 ? "hold " + s.key + " for " + trim(s.holdSeconds) + "s"
@@ -797,7 +816,7 @@ public final class KeyTimer implements ClientModInitializer {
 
 	private static boolean same(Step a, Step b) {
 		return java.util.Objects.equals(a.key, b.key) && a.holdSeconds == b.holdSeconds && a.waitSeconds == b.waitSeconds
-				&& a.blocks == b.blocks && java.util.Objects.equals(a.action, b.action) && java.util.Objects.equals(a.item, b.item);
+				&& a.blocks == b.blocks && java.util.Objects.equals(a.action, b.action) && java.util.Objects.equals(a.item, b.item) && a.stacks == b.stacks;
 	}
 
 	private static String trim(double d) {
