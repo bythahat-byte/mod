@@ -359,9 +359,39 @@
       "holdSeconds": 0,
       "waitSeconds": 3,
       "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 0,
+      "blocks": 2
+    },
+    {
+      "key": "w",
+      "holdSeconds": 0,
+      "waitSeconds": 10,
+      "blocks": 38
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 0,
+      "blocks": 2
+    },
+    {
+      "key": "s",
+      "holdSeconds": 0.2,
+      "waitSeconds": 0,
+      "blocks": 0
+    },
+    {
+      "key": null,
+      "holdSeconds": 0,
+      "waitSeconds": 25,
+      "blocks": 0
     }
   ],
-  "loop": false,
+  "loop": true,
   "saves": {
     "1": {
       "steps": [
@@ -724,9 +754,39 @@
           "holdSeconds": 0,
           "waitSeconds": 3,
           "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 2
+        },
+        {
+          "key": "w",
+          "holdSeconds": 0,
+          "waitSeconds": 10,
+          "blocks": 38
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 2
+        },
+        {
+          "key": "s",
+          "holdSeconds": 0.2,
+          "waitSeconds": 0,
+          "blocks": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 25,
+          "blocks": 0
         }
       ],
-      "loop": false
+      "loop": true
     },
     "2": {
       "steps": [
