@@ -1,0 +1,1683 @@
+{
+  "steps": [
+    {
+      "key": null,
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 0
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "s",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 13
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "s",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 13
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "s",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 13
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    }
+  ],
+  "loop": false,
+  "saves": {
+    "1": {
+      "steps": [
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 0
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "s",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 13
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "s",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 13
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "s",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 13
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        }
+      ],
+      "loop": false
+    },
+    "2": {
+      "steps": [
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 0
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "s",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 13
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        }
+      ],
+      "loop": false
+    },
+    "3": {
+      "steps": [
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 0
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "s",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 13
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "s",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 13
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "s",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 13
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        }
+      ],
+      "loop": false
+    },
+    "4": {
+      "steps": [
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 0
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "s",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 13
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        }
+      ],
+      "loop": false
+    }
+  }
+}
