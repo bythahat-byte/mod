@@ -13,6 +13,7 @@ each: for example `1`, wait 60 s, `2`, wait 60 s, then (optionally) starts over.
 /keytimer refill wheat 1   open the inventory and move all wheat to the hotbar, then wait 1 second
 /keytimer crafthay 1       craft hay bales into wheat (only while there's room), then wait 1 second
 /keytimer crafthay 1 1     same, but only one stack of hay bales
+/keytimer crafthay 1 1 64  only when you have less than 64 wheat (and room for the whole stack's wheat)
 /keytimer refill wheat 1 2 move only 2 stacks of wheat to the hotbar
 /keytimer repeat 11 2   make the last 2 steps happen 11 times in total
 /keytimer start         (or bind "Start/Stop Key Timer" in Controls)

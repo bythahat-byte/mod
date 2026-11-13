@@ -55,6 +55,8 @@ public final class KeyTimer implements ClientModInitializer {
 		String item;
 		/** Inventory steps: how many stacks to handle (0 = all). */
 		int stacks;
+		/** crafthay: only run when you have fewer than this much wheat (0 = always). */
+		int wheatBelow;
 
 		Step(String key, double holdSeconds, double waitSeconds) {
 			this.key = key;
@@ -80,12 +82,18 @@ public final class KeyTimer implements ClientModInitializer {
 			return this;
 		}
 
+		Step withWheatBelow(int wheatBelow) {
+			this.wheatBelow = wheatBelow;
+			return this;
+		}
+
 		Step copy() {
 			Step step = new Step(key, holdSeconds, waitSeconds);
 			step.blocks = blocks;
 			step.action = action;
 			step.item = item;
 			step.stacks = stacks;
+			step.wheatBelow = wheatBelow;
 			return step;
 		}
 	}
@@ -451,6 +459,10 @@ public final class KeyTimer implements ClientModInitializer {
 			nextStepAt = System.nanoTime() + inventoryWaitNanos; // a chest or menu is open: skip this step
 			return;
 		}
+		if ("crafthay".equals(step.action) && step.wheatBelow > 0 && countItem(player.getInventory(), net.minecraft.item.Items.WHEAT) >= step.wheatBelow) {
+			nextStepAt = System.nanoTime() + inventoryWaitNanos; // still have enough wheat: nothing to do
+			return;
+		}
 		openedInventory = false;
 		if (client.currentScreen == null) {
 			client.setScreen(new net.minecraft.client.gui.screen.ingame.InventoryScreen(player));
@@ -514,6 +526,16 @@ public final class KeyTimer implements ClientModInitializer {
 		return false;
 	}
 
+	private static int countItem(net.minecraft.entity.player.PlayerInventory inv, net.minecraft.item.Item item) {
+		int n = 0;
+		for (int i = 0; i < 36; i++) {
+			if (inv.getStack(i).isOf(item)) {
+				n += inv.getStack(i).getCount();
+			}
+		}
+		return n;
+	}
+
 	/** Room for wheat in the inventory (main + hotbar), in items. */
 	private static int wheatSpace(net.minecraft.entity.player.PlayerInventory inv) {
 		int space = 0;
@@ -543,7 +565,12 @@ public final class KeyTimer implements ClientModInitializer {
 					return false;
 				}
 				for (int i = 0; i < 36; i++) {
-					if (inv.getStack(i).isOf(net.minecraft.item.Items.HAY_BLOCK)) {
+					net.minecraft.item.ItemStack hay = inv.getStack(i);
+					if (hay.isOf(net.minecraft.item.Items.HAY_BLOCK)) {
+						// only if all of this stack's wheat fits (its own slot frees up once picked up)
+						if (wheatSpace(inv) + 64 < hay.getCount() * 9) {
+							return false;
+						}
 						int screenSlot = i < 9 ? 36 + i : i;
 						click(client, screenSlot, 0, pickup); // pick up the stack
 						stage[0] = 1;
@@ -692,6 +719,7 @@ public final class KeyTimer implements ClientModInitializer {
 			}
 			String what = "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ") + s.item + " to the hotbar"
 					: "crafthay".equals(s.action) ? "craft " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "") + "hay bales into wheat"
+							+ (s.wheatBelow > 0 ? " if under " + s.wheatBelow + " wheat" : "")
 					: s.key == null ? "pause"
 					: s.blocks > 0 ? "move " + s.key + " " + trim(s.blocks) + " blocks"
 					: s.holdSeconds > 0 ? "hold " + s.key + " for " + trim(s.holdSeconds) + "s"
@@ -765,7 +793,11 @@ public final class KeyTimer implements ClientModInitializer {
 				.executes(ctx -> action.run(ctx, Step.inventory("crafthay", null, DoubleArgumentType.getDouble(ctx, "waitSeconds"))))
 				.then(argument("stacks", IntegerArgumentType.integer(1, 36)).executes(ctx ->
 						action.run(ctx, Step.inventory("crafthay", null, DoubleArgumentType.getDouble(ctx, "waitSeconds"))
-								.withStacks(IntegerArgumentType.getInteger(ctx, "stacks"))))));
+								.withStacks(IntegerArgumentType.getInteger(ctx, "stacks"))))
+						.then(argument("whenWheatBelow", IntegerArgumentType.integer(1, 2304)).executes(ctx ->
+								action.run(ctx, Step.inventory("crafthay", null, DoubleArgumentType.getDouble(ctx, "waitSeconds"))
+										.withStacks(IntegerArgumentType.getInteger(ctx, "stacks"))
+										.withWheatBelow(IntegerArgumentType.getInteger(ctx, "whenWheatBelow")))))));
 	}
 
 	/** "move <w|a|s|d> <blocks> <waitSeconds>": walk an exact number of blocks. */
@@ -787,6 +819,7 @@ public final class KeyTimer implements ClientModInitializer {
 	private static String describe(Step s) {
 		String what = "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ") + s.item + " to the hotbar"
 					: "crafthay".equals(s.action) ? "craft " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "") + "hay bales into wheat"
+							+ (s.wheatBelow > 0 ? " if under " + s.wheatBelow + " wheat" : "")
 					: s.key == null ? "pause"
 				: s.blocks > 0 ? "move " + s.key + " " + trim(s.blocks) + " blocks"
 				: s.holdSeconds > 0 ? "hold " + s.key + " for " + trim(s.holdSeconds) + "s"
@@ -816,7 +849,7 @@ public final class KeyTimer implements ClientModInitializer {
 
 	private static boolean same(Step a, Step b) {
 		return java.util.Objects.equals(a.key, b.key) && a.holdSeconds == b.holdSeconds && a.waitSeconds == b.waitSeconds
-				&& a.blocks == b.blocks && java.util.Objects.equals(a.action, b.action) && java.util.Objects.equals(a.item, b.item) && a.stacks == b.stacks;
+				&& a.blocks == b.blocks && java.util.Objects.equals(a.action, b.action) && java.util.Objects.equals(a.item, b.item) && a.stacks == b.stacks && a.wheatBelow == b.wheatBelow;
 	}
 
 	private static String trim(double d) {
