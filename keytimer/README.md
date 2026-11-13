@@ -10,6 +10,8 @@ each: for example `1`, wait 60 s, `2`, wait 60 s, then (optionally) starts over.
 /keytimer hold w 5 0    hold w for 5 seconds, then go straight to the next step
 /keytimer move d 6 5    walk exactly 6 blocks with d (stops on the block centre), then wait 5 seconds
 /keytimer wait 10       just pause for 10 seconds
+/keytimer refill wheat 1   open the inventory and move all wheat to the hotbar, then wait 1 second
+/keytimer crafthay 1       craft hay bales into wheat (only while there's room), then wait 1 second
 /keytimer repeat 11 2   make the last 2 steps happen 11 times in total
 /keytimer start         (or bind "Start/Stop Key Timer" in Controls)
 /keytimer stop

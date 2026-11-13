@@ -50,6 +50,9 @@ public final class KeyTimer implements ClientModInitializer {
 		double waitSeconds;
 		/** For "move" steps: walk this many blocks with a movement key (0 = not a move step). */
 		double blocks;
+		/** Inventory steps: "refill" (item -> hotbar) or "crafthay" (hay bales -> wheat). */
+		String action;
+		String item;
 
 		Step(String key, double holdSeconds, double waitSeconds) {
 			this.key = key;
@@ -63,9 +66,18 @@ public final class KeyTimer implements ClientModInitializer {
 			return step;
 		}
 
+		static Step inventory(String action, String item, double waitSeconds) {
+			Step step = new Step(null, 0, waitSeconds);
+			step.action = action;
+			step.item = item;
+			return step;
+		}
+
 		Step copy() {
 			Step step = new Step(key, holdSeconds, waitSeconds);
 			step.blocks = blocks;
+			step.action = action;
+			step.item = item;
 			return step;
 		}
 	}
@@ -115,6 +127,12 @@ public final class KeyTimer implements ClientModInitializer {
 	 * it shrinks to 0.546x (0.6 block slipperiness x 0.91). That adds up to velocity / (1 - 0.546).
 	 */
 	private static final double SLIDE_FACTOR = 1.0 / (1.0 - 0.546);
+	/** Inventory work for the current step, one click per tick; returns false when finished. */
+	private static java.util.function.BooleanSupplier inventoryWork;
+	private static int inventoryDelay;
+	private static long inventoryWaitNanos;
+	private static boolean openedInventory;
+
 	private static boolean moving;
 	private static boolean moveOnX;
 	private static int moveSign;
@@ -166,6 +184,16 @@ public final class KeyTimer implements ClientModInitializer {
 					return list(ctx.getSource());
 				})))
 				.then(moveForm((ctx, step) -> {
+					config.steps.add(step);
+					save();
+					return list(ctx.getSource());
+				}))
+				.then(refillForm((ctx, step) -> {
+					config.steps.add(step);
+					save();
+					return list(ctx.getSource());
+				}))
+				.then(craftHayForm((ctx, step) -> {
 					config.steps.add(step);
 					save();
 					return list(ctx.getSource());
@@ -326,6 +354,20 @@ public final class KeyTimer implements ClientModInitializer {
 			return;
 		}
 		long now = System.nanoTime();
+		if (inventoryWork != null) {
+			if (client.currentScreen != null && !(client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen)) {
+				finishInventory(client, now); // something else opened; skip the rest
+				return;
+			}
+			if (inventoryDelay > 0) {
+				inventoryDelay--;
+				return;
+			}
+			if (!inventoryWork.getAsBoolean()) {
+				finishInventory(client, now);
+			}
+			return;
+		}
 		if (holdingKey != null && moving) {
 			ClientPlayerEntity player = client.player;
 			double pos = moveOnX ? player.getX() : player.getZ();
@@ -360,6 +402,11 @@ public final class KeyTimer implements ClientModInitializer {
 			stepIndex = 0;
 		}
 		Step step = config.steps.get(stepIndex);
+		if (step.action != null) {
+			stepIndex++;
+			startInventory(client, step);
+			return;
+		}
 		InputUtil.Key key = step.key == null ? null : parseKey(step.key);
 		long start = now;
 		if (key != null) {
@@ -384,6 +431,147 @@ public final class KeyTimer implements ClientModInitializer {
 		}
 		nextStepAt = start + (long) (step.waitSeconds * 1_000_000_000L);
 		stepIndex++;
+	}
+
+	// ---------------------------------------------------------------- inventory steps
+
+	private static void startInventory(MinecraftClient client, Step step) {
+		ClientPlayerEntity player = client.player;
+		inventoryWaitNanos = (long) (step.waitSeconds * 1_000_000_000L);
+		nextStepAt = Long.MAX_VALUE;
+		if (client.currentScreen != null && !(client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen)) {
+			nextStepAt = System.nanoTime() + inventoryWaitNanos; // a chest or menu is open: skip this step
+			return;
+		}
+		openedInventory = false;
+		if (client.currentScreen == null) {
+			client.setScreen(new net.minecraft.client.gui.screen.ingame.InventoryScreen(player));
+			openedInventory = true;
+		}
+		inventoryDelay = 2; // let the screen open
+		if ("refill".equals(step.action)) {
+			net.minecraft.item.Item item = parseItem(step.item);
+			int[] guard = {0};
+			inventoryWork = () -> item != null && guard[0]++ < 40 && refillOnce(client, item);
+		} else if ("crafthay".equals(step.action)) {
+			int[] stage = {0};
+			int[] guard = {0};
+			inventoryWork = () -> guard[0]++ < 400 && craftHayStep(client, stage);
+		} else {
+			inventoryWork = () -> false;
+		}
+	}
+
+	private static void finishInventory(MinecraftClient client, long now) {
+		inventoryWork = null;
+		if (openedInventory && client.player != null
+				&& client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen) {
+			client.player.closeHandledScreen();
+		}
+		openedInventory = false;
+		nextStepAt = now + inventoryWaitNanos;
+	}
+
+	private static void click(MinecraftClient client, int slotId, int button, net.minecraft.screen.slot.SlotActionType type) {
+		ClientPlayerEntity player = client.player;
+		client.interactionManager.clickSlot(player.playerScreenHandler.syncId, slotId, button, type, player);
+	}
+
+	/**
+	 * Shift-clicks one stack of {@code item} from the main inventory (screen slots 9-35) into the
+	 * hotbar, if the hotbar has room for it. Returns false when there's nothing more to move.
+	 */
+	private static boolean refillOnce(MinecraftClient client, net.minecraft.item.Item item) {
+		net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
+		for (int i = 9; i < 36; i++) {
+			net.minecraft.item.ItemStack stack = inv.getStack(i);
+			if (stack.isEmpty() || !stack.isOf(item) || !hotbarHasRoomFor(inv, stack)) {
+				continue;
+			}
+			click(client, i, 0, net.minecraft.screen.slot.SlotActionType.QUICK_MOVE); // inventory index 9-35 = screen slot 9-35
+			return true;
+		}
+		return false;
+	}
+
+	private static boolean hotbarHasRoomFor(net.minecraft.entity.player.PlayerInventory inv, net.minecraft.item.ItemStack stack) {
+		for (int i = 0; i < 9; i++) {
+			net.minecraft.item.ItemStack h = inv.getStack(i);
+			if (h.isEmpty() || (net.minecraft.item.ItemStack.areItemsAndComponentsEqual(h, stack) && h.getCount() < h.getMaxCount())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** Room for wheat in the inventory (main + hotbar), in items. */
+	private static int wheatSpace(net.minecraft.entity.player.PlayerInventory inv) {
+		int space = 0;
+		for (int i = 0; i < 36; i++) {
+			net.minecraft.item.ItemStack h = inv.getStack(i);
+			if (h.isEmpty()) {
+				space += 64;
+			} else if (h.isOf(net.minecraft.item.Items.WHEAT)) {
+				space += h.getMaxCount() - h.getCount();
+			}
+		}
+		return space;
+	}
+
+	/**
+	 * One click of the hay -> wheat routine, using the inventory's 2x2 crafting grid
+	 * (screen slot 1 = top-left input, 0 = result):
+	 * 0 pick up a hay stack, 1 put it in the grid, 2 shift-click the result (crafts as many as
+	 * fit), 3 shift-click leftover hay back. Repeats while there's room for at least 9 wheat.
+	 */
+	private static boolean craftHayStep(MinecraftClient client, int[] stage) {
+		net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
+		net.minecraft.screen.slot.SlotActionType pickup = net.minecraft.screen.slot.SlotActionType.PICKUP;
+		switch (stage[0]) {
+			case 0 -> {
+				if (wheatSpace(inv) < 9) {
+					return false;
+				}
+				for (int i = 0; i < 36; i++) {
+					if (inv.getStack(i).isOf(net.minecraft.item.Items.HAY_BLOCK)) {
+						int screenSlot = i < 9 ? 36 + i : i;
+						click(client, screenSlot, 0, pickup); // pick up the stack
+						stage[0] = 1;
+						return true;
+					}
+				}
+				return false; // no hay left
+			}
+			case 1 -> {
+				click(client, 1, 0, pickup); // drop it into the crafting grid
+				stage[0] = 2;
+				inventoryDelay = 2; // give the server a moment to work out the result
+				return true;
+			}
+			case 2 -> {
+				click(client, 0, 0, net.minecraft.screen.slot.SlotActionType.QUICK_MOVE); // craft as much as fits
+				stage[0] = 3;
+				inventoryDelay = 1;
+				return true;
+			}
+			default -> {
+				click(client, 1, 0, net.minecraft.screen.slot.SlotActionType.QUICK_MOVE); // leftover hay back to the inventory
+				stage[0] = 0;
+				inventoryDelay = 1;
+				return true;
+			}
+		}
+	}
+
+	private static net.minecraft.item.Item parseItem(String name) {
+		if (name == null) {
+			return null;
+		}
+		net.minecraft.util.Identifier id = net.minecraft.util.Identifier.tryParse(name.contains(":") ? name : "minecraft:" + name);
+		if (id == null || !net.minecraft.registry.Registries.ITEM.containsId(id)) {
+			return null;
+		}
+		return net.minecraft.registry.Registries.ITEM.get(id);
 	}
 
 	/**
@@ -438,6 +626,15 @@ public final class KeyTimer implements ClientModInitializer {
 			holdingKey = null;
 		}
 		moving = false;
+		if (inventoryWork != null) {
+			MinecraftClient client = MinecraftClient.getInstance();
+			inventoryWork = null;
+			if (openedInventory && client.player != null
+					&& client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen) {
+				client.player.closeHandledScreen();
+			}
+			openedInventory = false;
+		}
 		if (was && feedback != null) {
 			feedback.accept(Text.literal("Key Timer stopped").formatted(Formatting.RED));
 		}
@@ -482,7 +679,9 @@ public final class KeyTimer implements ClientModInitializer {
 			while (i + run < config.steps.size() && same(config.steps.get(i + run), s)) {
 				run++;
 			}
-			String what = s.key == null ? "pause"
+			String what = "refill".equals(s.action) ? "move all " + s.item + " to the hotbar"
+					: "crafthay".equals(s.action) ? "craft hay bales into wheat"
+					: s.key == null ? "pause"
 					: s.blocks > 0 ? "move " + s.key + " " + trim(s.blocks) + " blocks"
 					: s.holdSeconds > 0 ? "hold " + s.key + " for " + trim(s.holdSeconds) + "s"
 					: "press " + s.key;
@@ -492,7 +691,7 @@ public final class KeyTimer implements ClientModInitializer {
 			i += run - 1;
 		}
 		source.sendFeedback(Text.literal("  loop: " + (config.loop ? "on" : "off")
-				+ "   /keytimer start [save] | stop | add | hold | move | wait | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
+				+ "   /keytimer start [save] | stop | add | hold | move | wait | refill | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
 		return 1;
 	}
 
@@ -525,7 +724,29 @@ public final class KeyTimer implements ClientModInitializer {
 						}))))
 				.then(literal("wait").then(argument("seconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx ->
 						action.run(ctx, new Step(null, 0, DoubleArgumentType.getDouble(ctx, "seconds"))))))
-				.then(moveForm(action));
+				.then(moveForm(action))
+				.then(refillForm(action))
+				.then(craftHayForm(action));
+	}
+
+	/** "refill <item> <waitSeconds>": move every stack of the item from the inventory to the hotbar. */
+	private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> refillForm(StepAction action) {
+		return literal("refill").then(argument("item", StringArgumentType.word())
+				.suggests((ctx, b) -> net.minecraft.command.CommandSource.suggestMatching(List.of("wheat", "hay_block", "carrot", "potato", "beetroot", "seagrass"), b))
+				.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+					String item = StringArgumentType.getString(ctx, "item").toLowerCase(Locale.ROOT);
+					if (parseItem(item) == null) {
+						ctx.getSource().sendError(Text.literal("Unknown item \"" + item + "\" (use names like wheat or hay_block)"));
+						return 0;
+					}
+					return action.run(ctx, Step.inventory("refill", item, DoubleArgumentType.getDouble(ctx, "waitSeconds")));
+				})));
+	}
+
+	/** "crafthay <waitSeconds>": craft hay bales into wheat while there's room. */
+	private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> craftHayForm(StepAction action) {
+		return literal("crafthay").then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx ->
+				action.run(ctx, Step.inventory("crafthay", null, DoubleArgumentType.getDouble(ctx, "waitSeconds")))));
 	}
 
 	/** "move <w|a|s|d> <blocks> <waitSeconds>": walk an exact number of blocks. */
@@ -545,7 +766,9 @@ public final class KeyTimer implements ClientModInitializer {
 	}
 
 	private static String describe(Step s) {
-		String what = s.key == null ? "pause"
+		String what = "refill".equals(s.action) ? "move all " + s.item + " to the hotbar"
+					: "crafthay".equals(s.action) ? "craft hay bales into wheat"
+					: s.key == null ? "pause"
 				: s.blocks > 0 ? "move " + s.key + " " + trim(s.blocks) + " blocks"
 				: s.holdSeconds > 0 ? "hold " + s.key + " for " + trim(s.holdSeconds) + "s"
 				: "press " + s.key;
@@ -574,7 +797,7 @@ public final class KeyTimer implements ClientModInitializer {
 
 	private static boolean same(Step a, Step b) {
 		return java.util.Objects.equals(a.key, b.key) && a.holdSeconds == b.holdSeconds && a.waitSeconds == b.waitSeconds
-				&& a.blocks == b.blocks;
+				&& a.blocks == b.blocks && java.util.Objects.equals(a.action, b.action) && java.util.Objects.equals(a.item, b.item);
 	}
 
 	private static String trim(double d) {
