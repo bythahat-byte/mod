@@ -792,12 +792,28 @@ public final class KeyTimer implements ClientModInitializer {
 
 	/** "refill <item> <waitSeconds>": move every stack of the item from the inventory to the hotbar. */
 	private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> refillForm(StepAction action) {
-		return literal("refill").then(argument("item", StringArgumentType.string())
-				.suggests((ctx, b) -> net.minecraft.command.CommandSource.suggestMatching(List.of("wheat", "hay_block", "carrot", "potato", "beetroot", "name:"), b))
-				.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400))
-						.executes(ctx -> refill(ctx, action, 0))
-						.then(argument("stacks", IntegerArgumentType.integer(1, 36))
-								.executes(ctx -> refill(ctx, action, IntegerArgumentType.getInteger(ctx, "stacks"))))));
+		return literal("refill")
+				.then(literal("named").then(argument("name", StringArgumentType.string())
+						.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400))
+								.executes(ctx -> refillNamed(ctx, action, 0))
+								.then(argument("stacks", IntegerArgumentType.integer(1, 36))
+										.executes(ctx -> refillNamed(ctx, action, IntegerArgumentType.getInteger(ctx, "stacks")))))))
+				.then(argument("item", StringArgumentType.string())
+						.suggests((ctx, b) -> net.minecraft.command.CommandSource.suggestMatching(List.of("wheat", "hay_block", "carrot", "potato", "beetroot", "named"), b))
+						.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400))
+								.executes(ctx -> refill(ctx, action, 0))
+								.then(argument("stacks", IntegerArgumentType.integer(1, 36))
+										.executes(ctx -> refill(ctx, action, IntegerArgumentType.getInteger(ctx, "stacks"))))));
+	}
+
+	/** "refill named <name> <wait> [stacks]": match by the name shown on the item (custom server items). */
+	private static int refillNamed(com.mojang.brigadier.context.CommandContext<FabricClientCommandSource> ctx, StepAction action, int stacks) {
+		String name = StringArgumentType.getString(ctx, "name").trim();
+		if (name.isEmpty()) {
+			ctx.getSource().sendError(Text.literal("Give the item's name, e.g. /keytimer refill named Rennet 1"));
+			return 0;
+		}
+		return action.run(ctx, Step.inventory("refill", "name:" + name, DoubleArgumentType.getDouble(ctx, "waitSeconds")).withStacks(stacks));
 	}
 
 	private static int refill(com.mojang.brigadier.context.CommandContext<FabricClientCommandSource> ctx, StepAction action, int stacks) {
