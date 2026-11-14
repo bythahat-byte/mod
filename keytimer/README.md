@@ -15,6 +15,7 @@ each: for example `1`, wait 60 s, `2`, wait 60 s, then (optionally) starts over.
 /keytimer crafthay 1 1     same, but only one stack of hay bales
 /keytimer crafthay 1 1 64  only when you have less than 64 wheat (and room for the whole stack's wheat)
 /keytimer refill wheat 1 2 move only 2 stacks of wheat to the hotbar
+/keytimer refill name:Rennet 1   move items by the name shown on them (custom server items); underscores for spaces
 /keytimer repeat 11 2   make the last 2 steps happen 11 times in total
 /keytimer start         (or bind "Start/Stop Key Timer" in Controls)
 /keytimer stop

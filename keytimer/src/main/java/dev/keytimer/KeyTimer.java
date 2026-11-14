@@ -470,10 +470,10 @@ public final class KeyTimer implements ClientModInitializer {
 		}
 		inventoryDelay = 2; // let the screen open
 		if ("refill".equals(step.action)) {
-			net.minecraft.item.Item item = parseItem(step.item);
+			java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(step.item);
 			int[] guard = {0};
 			int limit = step.stacks > 0 ? step.stacks : 40;
-			inventoryWork = () -> item != null && guard[0]++ < limit && refillOnce(client, item);
+			inventoryWork = () -> matches != null && guard[0]++ < limit && refillOnce(client, matches);
 		} else if ("crafthay".equals(step.action)) {
 			int[] stage = {0, 0}; // [routine stage, hay stacks started]
 			int[] guard = {0};
@@ -503,11 +503,11 @@ public final class KeyTimer implements ClientModInitializer {
 	 * Shift-clicks one stack of {@code item} from the main inventory (screen slots 9-35) into the
 	 * hotbar, if the hotbar has room for it. Returns false when there's nothing more to move.
 	 */
-	private static boolean refillOnce(MinecraftClient client, net.minecraft.item.Item item) {
+	private static boolean refillOnce(MinecraftClient client, java.util.function.Predicate<net.minecraft.item.ItemStack> matches) {
 		net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
 		for (int i = 9; i < 36; i++) {
 			net.minecraft.item.ItemStack stack = inv.getStack(i);
-			if (stack.isEmpty() || !stack.isOf(item) || !hotbarHasRoomFor(inv, stack)) {
+			if (stack.isEmpty() || !matches.test(stack) || !hotbarHasRoomFor(inv, stack)) {
 				continue;
 			}
 			click(client, i, 0, net.minecraft.screen.slot.SlotActionType.QUICK_MOVE); // inventory index 9-35 = screen slot 9-35
@@ -599,6 +599,27 @@ public final class KeyTimer implements ClientModInitializer {
 				return true;
 			}
 		}
+	}
+
+	/**
+	 * What a refill step looks for: "wheat" / "minecraft:wheat" matches the item type;
+	 * "name:Rennet" matches the name shown on the item (any case, underscores for spaces),
+	 * for custom server items that are a normal item with a custom name.
+	 */
+	private static java.util.function.Predicate<net.minecraft.item.ItemStack> itemMatcher(String spec) {
+		if (spec == null) {
+			return null;
+		}
+		if (spec.startsWith("name:")) {
+			String wanted = normalizeName(spec.substring(5));
+			return stack -> normalizeName(stack.getName().getString()).equals(wanted);
+		}
+		net.minecraft.item.Item item = parseItem(spec);
+		return item == null ? null : stack -> stack.isOf(item);
+	}
+
+	private static String normalizeName(String name) {
+		return name.replace('_', ' ').trim().toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
 	}
 
 	private static net.minecraft.item.Item parseItem(String name) {
@@ -717,7 +738,8 @@ public final class KeyTimer implements ClientModInitializer {
 			while (i + run < config.steps.size() && same(config.steps.get(i + run), s)) {
 				run++;
 			}
-			String what = "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ") + s.item + " to the hotbar"
+			String what = "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ")
+							+ (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5).replace('_', ' ') : s.item) + " to the hotbar"
 					: "crafthay".equals(s.action) ? "craft " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "") + "hay bales into wheat"
 							+ (s.wheatBelow > 0 ? " if under " + s.wheatBelow + " wheat" : "")
 					: s.key == null ? "pause"
@@ -770,8 +792,8 @@ public final class KeyTimer implements ClientModInitializer {
 
 	/** "refill <item> <waitSeconds>": move every stack of the item from the inventory to the hotbar. */
 	private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> refillForm(StepAction action) {
-		return literal("refill").then(argument("item", StringArgumentType.word())
-				.suggests((ctx, b) -> net.minecraft.command.CommandSource.suggestMatching(List.of("wheat", "hay_block", "carrot", "potato", "beetroot", "seagrass"), b))
+		return literal("refill").then(argument("item", StringArgumentType.string())
+				.suggests((ctx, b) -> net.minecraft.command.CommandSource.suggestMatching(List.of("wheat", "hay_block", "carrot", "potato", "beetroot", "name:"), b))
 				.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400))
 						.executes(ctx -> refill(ctx, action, 0))
 						.then(argument("stacks", IntegerArgumentType.integer(1, 36))
@@ -779,9 +801,13 @@ public final class KeyTimer implements ClientModInitializer {
 	}
 
 	private static int refill(com.mojang.brigadier.context.CommandContext<FabricClientCommandSource> ctx, StepAction action, int stacks) {
-		String item = StringArgumentType.getString(ctx, "item").toLowerCase(Locale.ROOT);
-		if (parseItem(item) == null) {
-			ctx.getSource().sendError(Text.literal("Unknown item \"" + item + "\" (use names like wheat or hay_block)"));
+		String item = StringArgumentType.getString(ctx, "item");
+		if (!item.startsWith("name:")) {
+			item = item.toLowerCase(Locale.ROOT);
+		}
+		if (item.equals("name:") || itemMatcher(item) == null) {
+			ctx.getSource().sendError(Text.literal("Unknown item \"" + item
+					+ "\". Use an item id like wheat, or name:Rennet for an item's display name (underscores for spaces)"));
 			return 0;
 		}
 		return action.run(ctx, Step.inventory("refill", item, DoubleArgumentType.getDouble(ctx, "waitSeconds")).withStacks(stacks));
@@ -817,7 +843,8 @@ public final class KeyTimer implements ClientModInitializer {
 	}
 
 	private static String describe(Step s) {
-		String what = "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ") + s.item + " to the hotbar"
+		String what = "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ")
+							+ (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5).replace('_', ' ') : s.item) + " to the hotbar"
 					: "crafthay".equals(s.action) ? "craft " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "") + "hay bales into wheat"
 							+ (s.wheatBelow > 0 ? " if under " + s.wheatBelow + " wheat" : "")
 					: s.key == null ? "pause"
