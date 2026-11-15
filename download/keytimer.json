@@ -3,6 +3,26 @@
     {
       "key": null,
       "holdSeconds": 0,
+      "waitSeconds": 1,
+      "blocks": 0,
+      "action": "crafthay",
+      "item": null,
+      "stacks": 1,
+      "wheatBelow": 200
+    },
+    {
+      "key": null,
+      "holdSeconds": 0,
+      "waitSeconds": 0.5,
+      "blocks": 0,
+      "action": "refill",
+      "item": "wheat",
+      "stacks": 0,
+      "wheatBelow": 0
+    },
+    {
+      "key": null,
+      "holdSeconds": 0,
       "waitSeconds": 3,
       "blocks": 0
     },
@@ -91,94 +111,24 @@
       "blocks": 6
     },
     {
-      "key": "s",
+      "key": null,
       "holdSeconds": 0,
-      "waitSeconds": 3,
-      "blocks": 13
+      "waitSeconds": 1,
+      "blocks": 0,
+      "action": "crafthay",
+      "item": null,
+      "stacks": 1,
+      "wheatBelow": 200
     },
     {
-      "key": "a",
+      "key": null,
       "holdSeconds": 0,
-      "waitSeconds": 3,
-      "blocks": 6
-    },
-    {
-      "key": "a",
-      "holdSeconds": 0,
-      "waitSeconds": 3,
-      "blocks": 6
-    },
-    {
-      "key": "a",
-      "holdSeconds": 0,
-      "waitSeconds": 3,
-      "blocks": 6
-    },
-    {
-      "key": "a",
-      "holdSeconds": 0,
-      "waitSeconds": 3,
-      "blocks": 6
-    },
-    {
-      "key": "a",
-      "holdSeconds": 0,
-      "waitSeconds": 3,
-      "blocks": 6
-    },
-    {
-      "key": "a",
-      "holdSeconds": 0,
-      "waitSeconds": 3,
-      "blocks": 6
-    },
-    {
-      "key": "a",
-      "holdSeconds": 0,
-      "waitSeconds": 3,
-      "blocks": 6
-    },
-    {
-      "key": "a",
-      "holdSeconds": 0,
-      "waitSeconds": 3,
-      "blocks": 6
-    },
-    {
-      "key": "a",
-      "holdSeconds": 0,
-      "waitSeconds": 3,
-      "blocks": 6
-    },
-    {
-      "key": "a",
-      "holdSeconds": 0,
-      "waitSeconds": 3,
-      "blocks": 6
-    },
-    {
-      "key": "a",
-      "holdSeconds": 0,
-      "waitSeconds": 3,
-      "blocks": 6
-    },
-    {
-      "key": "a",
-      "holdSeconds": 0,
-      "waitSeconds": 3,
-      "blocks": 6
-    },
-    {
-      "key": "a",
-      "holdSeconds": 0,
-      "waitSeconds": 3,
-      "blocks": 6
-    },
-    {
-      "key": "a",
-      "holdSeconds": 0,
-      "waitSeconds": 3,
-      "blocks": 6
+      "waitSeconds": 0.5,
+      "blocks": 0,
+      "action": "refill",
+      "item": "wheat",
+      "stacks": 0,
+      "wheatBelow": 0
     },
     {
       "key": "s",
@@ -187,10 +137,114 @@
       "blocks": 13
     },
     {
-      "key": "d",
+      "key": "a",
       "holdSeconds": 0,
       "waitSeconds": 3,
       "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": null,
+      "holdSeconds": 0,
+      "waitSeconds": 1,
+      "blocks": 0,
+      "action": "crafthay",
+      "item": null,
+      "stacks": 1,
+      "wheatBelow": 200
+    },
+    {
+      "key": null,
+      "holdSeconds": 0,
+      "waitSeconds": 0.5,
+      "blocks": 0,
+      "action": "refill",
+      "item": "wheat",
+      "stacks": 0,
+      "wheatBelow": 0
+    },
+    {
+      "key": "s",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 13
     },
     {
       "key": "d",
@@ -269,6 +323,32 @@
       "holdSeconds": 0,
       "waitSeconds": 3,
       "blocks": 6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 3,
+      "blocks": 6
+    },
+    {
+      "key": null,
+      "holdSeconds": 0,
+      "waitSeconds": 1,
+      "blocks": 0,
+      "action": "crafthay",
+      "item": null,
+      "stacks": 1,
+      "wheatBelow": 200
+    },
+    {
+      "key": null,
+      "holdSeconds": 0,
+      "waitSeconds": 0.5,
+      "blocks": 0,
+      "action": "refill",
+      "item": "wheat",
+      "stacks": 0,
+      "wheatBelow": 0
     },
     {
       "key": "s",
@@ -398,6 +478,26 @@
         {
           "key": null,
           "holdSeconds": 0,
+          "waitSeconds": 1,
+          "blocks": 0,
+          "action": "crafthay",
+          "item": null,
+          "stacks": 1,
+          "wheatBelow": 200
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "action": "refill",
+          "item": "wheat",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
           "waitSeconds": 3,
           "blocks": 0
         },
@@ -486,94 +586,24 @@
           "blocks": 6
         },
         {
-          "key": "s",
+          "key": null,
           "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 13
+          "waitSeconds": 1,
+          "blocks": 0,
+          "action": "crafthay",
+          "item": null,
+          "stacks": 1,
+          "wheatBelow": 200
         },
         {
-          "key": "a",
+          "key": null,
           "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "action": "refill",
+          "item": "wheat",
+          "stacks": 0,
+          "wheatBelow": 0
         },
         {
           "key": "s",
@@ -582,10 +612,114 @@
           "blocks": 13
         },
         {
-          "key": "d",
+          "key": "a",
           "holdSeconds": 0,
           "waitSeconds": 3,
           "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 1,
+          "blocks": 0,
+          "action": "crafthay",
+          "item": null,
+          "stacks": 1,
+          "wheatBelow": 200
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "action": "refill",
+          "item": "wheat",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": "s",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 13
         },
         {
           "key": "d",
@@ -664,6 +798,32 @@
           "holdSeconds": 0,
           "waitSeconds": 3,
           "blocks": 6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 1,
+          "blocks": 0,
+          "action": "crafthay",
+          "item": null,
+          "stacks": 1,
+          "wheatBelow": 200
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "action": "refill",
+          "item": "wheat",
+          "stacks": 0,
+          "wheatBelow": 0
         },
         {
           "key": "s",
@@ -978,6 +1138,26 @@
         {
           "key": null,
           "holdSeconds": 0,
+          "waitSeconds": 1,
+          "blocks": 0,
+          "action": "crafthay",
+          "item": null,
+          "stacks": 1,
+          "wheatBelow": 250
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "action": "refill",
+          "item": "wheat",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
           "waitSeconds": 3,
           "blocks": 0
         },
@@ -1102,130 +1282,24 @@
           "blocks": 3
         },
         {
-          "key": "s",
+          "key": null,
           "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 13
+          "waitSeconds": 1,
+          "blocks": 0,
+          "action": "crafthay",
+          "item": null,
+          "stacks": 1,
+          "wheatBelow": 250
         },
         {
-          "key": "a",
+          "key": null,
           "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 3
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 3
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 3
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 3
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 3
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 3
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 3
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 3
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 3
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 3
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 3
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 3
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 6
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 3
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0,
-          "waitSeconds": 3,
-          "blocks": 3
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "action": "refill",
+          "item": "wheat",
+          "stacks": 0,
+          "wheatBelow": 0
         },
         {
           "key": "s",
@@ -1234,6 +1308,152 @@
           "blocks": 13
         },
         {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 6
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 3
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 1,
+          "blocks": 0,
+          "action": "crafthay",
+          "item": null,
+          "stacks": 1,
+          "wheatBelow": 250
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "action": "refill",
+          "item": "wheat",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": "s",
+          "holdSeconds": 0,
+          "waitSeconds": 3,
+          "blocks": 13
+        },
+        {
           "key": "d",
           "holdSeconds": 0,
           "waitSeconds": 3,
@@ -1352,6 +1572,26 @@
           "holdSeconds": 0,
           "waitSeconds": 3,
           "blocks": 3
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 1,
+          "blocks": 0,
+          "action": "crafthay",
+          "item": null,
+          "stacks": 1,
+          "wheatBelow": 250
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "action": "refill",
+          "item": "wheat",
+          "stacks": 0,
+          "wheatBelow": 0
         },
         {
           "key": "s",
