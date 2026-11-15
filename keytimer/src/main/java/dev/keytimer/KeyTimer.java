@@ -57,6 +57,9 @@ public final class KeyTimer implements ClientModInitializer {
 		int stacks;
 		/** crafthay: only run when you have fewer than this much wheat (0 = always). */
 		int wheatBelow;
+		/** look: the direction to face (pitch may be null to keep the current one). */
+		Float lookYaw;
+		Float lookPitch;
 
 		Step(String key, double holdSeconds, double waitSeconds) {
 			this.key = key;
@@ -94,6 +97,8 @@ public final class KeyTimer implements ClientModInitializer {
 			step.item = item;
 			step.stacks = stacks;
 			step.wheatBelow = wheatBelow;
+			step.lookYaw = lookYaw;
+			step.lookPitch = lookPitch;
 			return step;
 		}
 	}
@@ -132,9 +137,9 @@ public final class KeyTimer implements ClientModInitializer {
 	private static int stepIndex;
 	private static long nextStepAt;
 	/** Key tapped this tick, released on the next one. */
-	private static InputUtil.Key heldKey;
+	private static List<InputUtil.Key> heldKey;
 	/** Key being held down for a "hold" step, and when to let go. */
-	private static InputUtil.Key holdingKey;
+	private static List<InputUtil.Key> holdingKey;
 	private static long holdUntil;
 
 	// "move" steps: walk until the target block centre, then let go so the slide stops you on it
@@ -168,10 +173,10 @@ public final class KeyTimer implements ClientModInitializer {
 		ClientTickEvents.END_CLIENT_TICK.register(KeyTimer::tick);
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(literal("keytimer")
 				.executes(ctx -> list(ctx.getSource()))
-				.then(literal("add").then(argument("key", StringArgumentType.word())
+				.then(literal("add").then(argument("key", StringArgumentType.string())
 						.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
 							String key = StringArgumentType.getString(ctx, "key");
-							if (parseKey(key) == null) {
+							if (parseKeys(key) == null) {
 								ctx.getSource().sendError(Text.literal("Unknown key \"" + key
 										+ "\". Use things like 1-9, a-z, space, left (mouse), right (mouse), f, q, e."));
 								return 0;
@@ -180,11 +185,11 @@ public final class KeyTimer implements ClientModInitializer {
 							save();
 							return list(ctx.getSource());
 						}))))
-				.then(literal("hold").then(argument("key", StringArgumentType.word())
+				.then(literal("hold").then(argument("key", StringArgumentType.string())
 						.then(argument("holdSeconds", DoubleArgumentType.doubleArg(0.05, 86400))
 								.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
 									String key = StringArgumentType.getString(ctx, "key");
-									if (parseKey(key) == null) {
+									if (parseKeys(key) == null) {
 										ctx.getSource().sendError(Text.literal("Unknown key \"" + key
 												+ "\". Use things like 1-9, a-z, space, left (mouse), right (mouse), f, q, e."));
 										return 0;
@@ -210,6 +215,16 @@ public final class KeyTimer implements ClientModInitializer {
 					return list(ctx.getSource());
 				}))
 				.then(craftHayForm((ctx, step) -> {
+					config.steps.add(step);
+					save();
+					return list(ctx.getSource());
+				}))
+				.then(lookForm((ctx, step) -> {
+					config.steps.add(step);
+					save();
+					return list(ctx.getSource());
+				}))
+				.then(dropForm((ctx, step) -> {
 					config.steps.add(step);
 					save();
 					return list(ctx.getSource());
@@ -359,7 +374,7 @@ public final class KeyTimer implements ClientModInitializer {
 			}
 		}
 		if (heldKey != null) {
-			KeyBinding.setKeyPressed(heldKey, false);
+			press(heldKey, false);
 			heldKey = null;
 		}
 		if (!running) {
@@ -391,20 +406,20 @@ public final class KeyTimer implements ClientModInitializer {
 			double error = (moveTarget - pos) * moveSign - vel * SLIDE_FACTOR; // where we'd stop if we let go now
 			// keep going while one more tick (moving about vel / 0.546) gets the stop closer to the target
 			if (error > vel / 0.546 / 2 && now < moveDeadline) {
-				KeyBinding.setKeyPressed(holdingKey, true);
+				press(holdingKey, true);
 				return;
 			}
-			KeyBinding.setKeyPressed(holdingKey, false);
+			press(holdingKey, false);
 			holdingKey = null;
 			moving = false;
 			nextStepAt = now + moveWaitNanos;
 		}
 		if (holdingKey != null) {
 			if (now < holdUntil) {
-				KeyBinding.setKeyPressed(holdingKey, true); // keep it down even if a real key event reset it
+				press(holdingKey, true); // keep it down even if a real key event reset it
 				return;
 			}
-			KeyBinding.setKeyPressed(holdingKey, false);
+			press(holdingKey, false);
 			holdingKey = null;
 		}
 		if (now < nextStepAt) {
@@ -418,17 +433,31 @@ public final class KeyTimer implements ClientModInitializer {
 			stepIndex = 0;
 		}
 		Step step = config.steps.get(stepIndex);
+		if ("look".equals(step.action)) {
+			stepIndex++;
+			if (step.lookYaw != null) {
+				client.player.setYaw(step.lookYaw);
+				client.player.setHeadYaw(step.lookYaw);
+			}
+			if (step.lookPitch != null) {
+				client.player.setPitch(step.lookPitch);
+			}
+			nextStepAt = now + (long) (step.waitSeconds * 1_000_000_000L);
+			return;
+		}
 		if (step.action != null) {
 			stepIndex++;
 			startInventory(client, step);
 			return;
 		}
-		InputUtil.Key key = step.key == null ? null : parseKey(step.key);
+		List<InputUtil.Key> key = step.key == null ? null : parseKeys(step.key);
 		long start = now;
 		if (key != null) {
 			// same as a real key press: counts as "pressed" once and is held down
-			KeyBinding.setKeyPressed(key, true);
-			KeyBinding.onKeyPressed(key);
+			press(key, true);
+			for (InputUtil.Key k : key) {
+				KeyBinding.onKeyPressed(k);
+			}
 			if (step.blocks > 0) {
 				startMove(client.player, step);
 				holdingKey = key;
@@ -474,6 +503,10 @@ public final class KeyTimer implements ClientModInitializer {
 			int[] guard = {0};
 			int limit = step.stacks > 0 ? step.stacks : 40;
 			inventoryWork = () -> matches != null && guard[0]++ < limit && refillOnce(client, matches);
+		} else if ("drop".equals(step.action)) {
+			java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(step.item);
+			int[] guard = {0};
+			inventoryWork = () -> matches != null && guard[0]++ < 40 && dropOnce(client, matches);
 		} else if ("crafthay".equals(step.action)) {
 			int[] stage = {0, 0}; // [routine stage, hay stacks started]
 			int[] guard = {0};
@@ -512,6 +545,20 @@ public final class KeyTimer implements ClientModInitializer {
 			}
 			click(client, i, 0, net.minecraft.screen.slot.SlotActionType.QUICK_MOVE); // inventory index 9-35 = screen slot 9-35
 			return true;
+		}
+		return false;
+	}
+
+	/** Throws one whole stack matching {@code matches} (hotbar or main inventory). False when none are left. */
+	private static boolean dropOnce(MinecraftClient client, java.util.function.Predicate<net.minecraft.item.ItemStack> matches) {
+		net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
+		for (int i = 0; i < 36; i++) {
+			net.minecraft.item.ItemStack stack = inv.getStack(i);
+			if (!stack.isEmpty() && matches.test(stack)) {
+				int screenSlot = i < 9 ? 36 + i : i;
+				click(client, screenSlot, 1, net.minecraft.screen.slot.SlotActionType.THROW); // like Ctrl+Q over the slot
+				return true;
+			}
 		}
 		return false;
 	}
@@ -643,12 +690,15 @@ public final class KeyTimer implements ClientModInitializer {
 		double yaw = Math.toRadians(player.getYaw());
 		double fx = -Math.sin(yaw), fz = Math.cos(yaw); // forward
 		double lx = Math.cos(yaw), lz = Math.sin(yaw);  // left
-		double dx, dz;
-		switch (step.key) {
-			case "w" -> { dx = fx; dz = fz; }
-			case "s" -> { dx = -fx; dz = -fz; }
-			case "a" -> { dx = lx; dz = lz; }
-			default -> { dx = -lx; dz = -lz; } // d
+		double dx = 0, dz = 0;
+		for (String part : step.key.split("\\+")) {
+			switch (part.trim()) {
+				case "w" -> { dx += fx; dz += fz; }
+				case "s" -> { dx -= fx; dz -= fz; }
+				case "a" -> { dx += lx; dz += lz; }
+				case "d" -> { dx -= lx; dz -= lz; }
+				default -> { }
+			}
 		}
 		moveOnX = Math.abs(dx) >= Math.abs(dz);
 		moveSign = (int) Math.signum(moveOnX ? dx : dz);
@@ -677,11 +727,11 @@ public final class KeyTimer implements ClientModInitializer {
 		boolean was = running;
 		running = false;
 		if (heldKey != null) {
-			KeyBinding.setKeyPressed(heldKey, false);
+			press(heldKey, false);
 			heldKey = null;
 		}
 		if (holdingKey != null) {
-			KeyBinding.setKeyPressed(holdingKey, false);
+			press(holdingKey, false);
 			holdingKey = null;
 		}
 		moving = false;
@@ -704,6 +754,30 @@ public final class KeyTimer implements ClientModInitializer {
 		if (client.player != null) {
 			client.player.sendMessage(text, true);
 		}
+	}
+
+	private static void press(List<InputUtil.Key> keys, boolean down) {
+		if (keys != null) {
+			for (InputUtil.Key k : keys) {
+				KeyBinding.setKeyPressed(k, down);
+			}
+		}
+	}
+
+	/** One key, or several joined with "+" (e.g. "w+d") that are pressed together. */
+	private static List<InputUtil.Key> parseKeys(String name) {
+		if (name == null) {
+			return null;
+		}
+		List<InputUtil.Key> keys = new ArrayList<>();
+		for (String part : name.split("\\+")) {
+			InputUtil.Key k = parseKey(part.trim());
+			if (k == null) {
+				return null;
+			}
+			keys.add(k);
+		}
+		return keys.isEmpty() ? null : keys;
 	}
 
 	/** "1", "a", "space", "left"/"right"/"middle" (mouse) or any Minecraft key name like "key.keyboard.f6". */
@@ -738,7 +812,9 @@ public final class KeyTimer implements ClientModInitializer {
 			while (i + run < config.steps.size() && same(config.steps.get(i + run), s)) {
 				run++;
 			}
-			String what = "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ")
+			String what = "look".equals(s.action) ? "look at " + s.lookYaw + (s.lookPitch != null ? " / " + s.lookPitch : "")
+					: "drop".equals(s.action) ? "drop all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item)
+					: "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ")
 							+ (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5).replace('_', ' ') : s.item) + " to the hotbar"
 					: "crafthay".equals(s.action) ? "craft " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "") + "hay bales into wheat"
 							+ (s.wheatBelow > 0 ? " if under " + s.wheatBelow + " wheat" : "")
@@ -752,7 +828,7 @@ public final class KeyTimer implements ClientModInitializer {
 			i += run - 1;
 		}
 		source.sendFeedback(Text.literal("  loop: " + (config.loop ? "on" : "off")
-				+ "   /keytimer start [save] | stop | add | hold | move | wait | refill | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
+				+ "   /keytimer start [save] | stop | add | hold | move | wait | look | refill | drop | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
 		return 1;
 	}
 
@@ -763,21 +839,21 @@ public final class KeyTimer implements ClientModInitializer {
 	/** Adds the "hold <key> <hold> <wait>", "add <key> <wait>" and "wait <seconds>" forms under {@code node}. */
 	private static <T extends com.mojang.brigadier.builder.ArgumentBuilder<FabricClientCommandSource, T>> T stepForms(T node, StepAction action) {
 		return node
-				.then(literal("hold").then(argument("key", StringArgumentType.word())
+				.then(literal("hold").then(argument("key", StringArgumentType.string())
 						.then(argument("holdSeconds", DoubleArgumentType.doubleArg(0.05, 86400))
 								.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
 									String key = StringArgumentType.getString(ctx, "key");
-									if (parseKey(key) == null) {
+									if (parseKeys(key) == null) {
 										ctx.getSource().sendError(Text.literal("Unknown key \"" + key + "\""));
 										return 0;
 									}
 									return action.run(ctx, new Step(key.toLowerCase(Locale.ROOT),
 											DoubleArgumentType.getDouble(ctx, "holdSeconds"), DoubleArgumentType.getDouble(ctx, "waitSeconds")));
 								})))))
-				.then(literal("add").then(argument("key", StringArgumentType.word())
+				.then(literal("add").then(argument("key", StringArgumentType.string())
 						.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
 							String key = StringArgumentType.getString(ctx, "key");
-							if (parseKey(key) == null) {
+							if (parseKeys(key) == null) {
 								ctx.getSource().sendError(Text.literal("Unknown key \"" + key + "\""));
 								return 0;
 							}
@@ -787,7 +863,45 @@ public final class KeyTimer implements ClientModInitializer {
 						action.run(ctx, new Step(null, 0, DoubleArgumentType.getDouble(ctx, "seconds"))))))
 				.then(moveForm(action))
 				.then(refillForm(action))
-				.then(craftHayForm(action));
+				.then(craftHayForm(action))
+				.then(lookForm(action))
+				.then(dropForm(action));
+	}
+
+	/** "look <yaw> <wait>" or "look <yaw> <pitch> <wait>": turn to face an exact direction (F3 "Facing" numbers). */
+	private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> lookForm(StepAction action) {
+		return literal("look").then(argument("yaw", com.mojang.brigadier.arguments.FloatArgumentType.floatArg(-360, 360))
+				.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+					Step step = Step.inventory("look", null, DoubleArgumentType.getDouble(ctx, "waitSeconds"));
+					step.lookYaw = com.mojang.brigadier.arguments.FloatArgumentType.getFloat(ctx, "yaw");
+					return action.run(ctx, step);
+				})
+						.then(argument("waitSeconds2", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+							// three numbers: yaw, pitch, wait
+							Step step = Step.inventory("look", null, DoubleArgumentType.getDouble(ctx, "waitSeconds2"));
+							step.lookYaw = com.mojang.brigadier.arguments.FloatArgumentType.getFloat(ctx, "yaw");
+							step.lookPitch = (float) Math.max(-90, Math.min(90, DoubleArgumentType.getDouble(ctx, "waitSeconds")));
+							return action.run(ctx, step);
+						}))));
+	}
+
+	/** "drop <item> <wait>" or "drop named <name> <wait>": open the inventory and throw every matching stack. */
+	private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> dropForm(StepAction action) {
+		return literal("drop")
+				.then(literal("named").then(argument("name", StringArgumentType.string())
+						.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+							String name = StringArgumentType.getString(ctx, "name").trim();
+							return action.run(ctx, Step.inventory("drop", "name:" + name, DoubleArgumentType.getDouble(ctx, "waitSeconds")));
+						}))))
+				.then(argument("item", StringArgumentType.string())
+						.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+							String item = StringArgumentType.getString(ctx, "item").toLowerCase(Locale.ROOT);
+							if (itemMatcher(item) == null) {
+								ctx.getSource().sendError(Text.literal("Unknown item \"" + item + "\". Use drop named <name> for custom items"));
+								return 0;
+							}
+							return action.run(ctx, Step.inventory("drop", item, DoubleArgumentType.getDouble(ctx, "waitSeconds")));
+						})));
 	}
 
 	/** "refill <item> <waitSeconds>": move every stack of the item from the inventory to the hotbar. */
@@ -844,14 +958,16 @@ public final class KeyTimer implements ClientModInitializer {
 
 	/** "move <w|a|s|d> <blocks> <waitSeconds>": walk an exact number of blocks. */
 	private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> moveForm(StepAction action) {
-		return literal("move").then(argument("key", StringArgumentType.word())
+		return literal("move").then(argument("key", StringArgumentType.string())
 				.suggests((ctx, b) -> net.minecraft.command.CommandSource.suggestMatching(List.of("w", "a", "s", "d"), b))
 				.then(argument("blocks", DoubleArgumentType.doubleArg(0.5, 10000))
 						.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
 							String key = StringArgumentType.getString(ctx, "key").toLowerCase(Locale.ROOT);
-							if (!List.of("w", "a", "s", "d").contains(key)) {
-								ctx.getSource().sendError(Text.literal("move only works with w, a, s or d"));
-								return 0;
+							for (String part : key.split("\\+")) {
+								if (!List.of("w", "a", "s", "d").contains(part)) {
+									ctx.getSource().sendError(Text.literal("move only works with w, a, s, d or combinations like w+d"));
+									return 0;
+								}
 							}
 							return action.run(ctx, Step.move(key, DoubleArgumentType.getDouble(ctx, "blocks"),
 									DoubleArgumentType.getDouble(ctx, "waitSeconds")));
@@ -859,7 +975,9 @@ public final class KeyTimer implements ClientModInitializer {
 	}
 
 	private static String describe(Step s) {
-		String what = "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ")
+		String what = "look".equals(s.action) ? "look at " + s.lookYaw + (s.lookPitch != null ? " / " + s.lookPitch : "")
+					: "drop".equals(s.action) ? "drop all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item)
+					: "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ")
 							+ (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5).replace('_', ' ') : s.item) + " to the hotbar"
 					: "crafthay".equals(s.action) ? "craft " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "") + "hay bales into wheat"
 							+ (s.wheatBelow > 0 ? " if under " + s.wheatBelow + " wheat" : "")
@@ -892,7 +1010,8 @@ public final class KeyTimer implements ClientModInitializer {
 
 	private static boolean same(Step a, Step b) {
 		return java.util.Objects.equals(a.key, b.key) && a.holdSeconds == b.holdSeconds && a.waitSeconds == b.waitSeconds
-				&& a.blocks == b.blocks && java.util.Objects.equals(a.action, b.action) && java.util.Objects.equals(a.item, b.item) && a.stacks == b.stacks && a.wheatBelow == b.wheatBelow;
+				&& a.blocks == b.blocks && java.util.Objects.equals(a.action, b.action) && java.util.Objects.equals(a.item, b.item) && a.stacks == b.stacks && a.wheatBelow == b.wheatBelow
+				&& java.util.Objects.equals(a.lookYaw, b.lookYaw) && java.util.Objects.equals(a.lookPitch, b.lookPitch);
 	}
 
 	private static String trim(double d) {
