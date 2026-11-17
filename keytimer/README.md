@@ -17,6 +17,8 @@ each: for example `1`, wait 60 s, `2`, wait 60 s, then (optionally) starts over.
 /keytimer stash named Rennet 0      move every Rennet stack from the hotbar into the inventory
 /keytimer chest named Rennet 0.5 12 open the chest you're looking at and take Rennet until you carry 12 stacks
 /keytimer edit 1 look here 0.3      make step 1 face wherever you're looking right now
+/keytimer flick 40 50 1.5 0         keep moving your head to a random pitch between 40 and 50 (about every 1.5s)
+/keytimer flick off 0               stop the head flick
 /keytimer goto w+a x 113912.5 0     hold W+A until your X (F3) reaches 113912.5, or you walk into a wall
 /keytimer refill wheat 1   open the inventory and move all wheat to the hotbar, then wait 1 second
 /keytimer crafthay 1       craft hay bales into wheat (only while there's room), then wait 1 second

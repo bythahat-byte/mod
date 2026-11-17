@@ -2013,11 +2013,38 @@
         {
           "key": null,
           "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": -180,
+          "lookPitch": 0
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 113682.6
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
           "waitSeconds": 0.3,
           "blocks": 0,
           "action": "look",
           "lookYaw": -180,
           "lookPitch": 47
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 0,
+          "action": "flick",
+          "flickMin": 40,
+          "flickMax": 50,
+          "flickEvery": 1.5
         },
         {
           "key": "s+d",
@@ -2042,6 +2069,16 @@
           "blocks": 0,
           "gotoAxis": "x",
           "gotoCoord": 113680.5
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 0,
+          "action": "flick",
+          "flickMin": 0,
+          "flickMax": 0,
+          "flickEvery": 0
         },
         {
           "key": "s",
@@ -2279,8 +2316,8 @@
           "gotoCoord": 26074.4
         },
         {
-          "key": "w+d+space",
-          "holdSeconds": 1.2,
+          "key": "w+space",
+          "holdSeconds": 3.0,
           "waitSeconds": 0.5,
           "blocks": 0
         }
