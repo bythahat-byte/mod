@@ -67,6 +67,9 @@ public final class KeyTimer implements ClientModInitializer {
 		Float flickMin;
 		Float flickMax;
 		Double flickEvery;
+		/** clicker: keep clicking "left" or "right" this many times a second (0 = stop). */
+		String clickButton;
+		Double clickCps;
 
 		Step(String key, double holdSeconds, double waitSeconds) {
 			this.key = key;
@@ -118,6 +121,8 @@ public final class KeyTimer implements ClientModInitializer {
 			step.flickMin = flickMin;
 			step.flickMax = flickMax;
 			step.flickEvery = flickEvery;
+			step.clickButton = clickButton;
+			step.clickCps = clickCps;
 			return step;
 		}
 	}
@@ -180,6 +185,10 @@ public final class KeyTimer implements ClientModInitializer {
 	private static double flickEverySeconds;
 	private static long nextFlickAt;
 	private static final java.util.Random RANDOM = new java.util.Random();
+	/** Auto clicker: while on, presses the attack/use key clickRate times a second. */
+	private static boolean clicking;
+	private static boolean clickUse;
+	private static double clickRate, clickAccum;
 
 	private static boolean moving;
 	private static boolean moveOnX;
@@ -428,6 +437,15 @@ public final class KeyTimer implements ClientModInitializer {
 				client.player.setPitch(pitch + Math.max(-4f, Math.min(4f, diff))); // a quick turn over a few ticks
 			}
 		}
+		if (clicking && client.currentScreen == null) {
+			clickAccum += clickRate / 20.0;
+			KeyBinding binding = clickUse ? client.options.useKey : client.options.attackKey;
+			InputUtil.Key key = InputUtil.fromTranslationKey(binding.getBoundKeyTranslationKey());
+			while (clickAccum >= 1) {
+				KeyBinding.onKeyPressed(key); // one click, handled next tick like a real one
+				clickAccum -= 1;
+			}
+		}
 		if (inventoryWork != null) {
 			if (!chestWork && client.currentScreen != null && !(client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen)) {
 				finishInventory(client, now); // something else opened; skip the rest
@@ -494,6 +512,15 @@ public final class KeyTimer implements ClientModInitializer {
 			if (step.lookPitch != null) {
 				client.player.setPitch(step.lookPitch);
 			}
+			nextStepAt = now + (long) (step.waitSeconds * 1_000_000_000L);
+			return;
+		}
+		if ("clicker".equals(step.action)) {
+			stepIndex++;
+			clicking = step.clickCps != null && step.clickCps > 0;
+			clickUse = !"left".equals(step.clickButton);
+			clickRate = clicking ? step.clickCps : 0;
+			clickAccum = 0;
 			nextStepAt = now + (long) (step.waitSeconds * 1_000_000_000L);
 			return;
 		}
@@ -903,6 +930,7 @@ public final class KeyTimer implements ClientModInitializer {
 		}
 		moving = false;
 		flicking = false;
+		clicking = false;
 		if (inventoryWork != null) {
 			MinecraftClient client = MinecraftClient.getInstance();
 			inventoryWork = null;
@@ -983,6 +1011,8 @@ public final class KeyTimer implements ClientModInitializer {
 			}
 			String what = "look".equals(s.action) ? "look at " + s.lookYaw + (s.lookPitch != null ? " / " + s.lookPitch : "")
 					: "drop".equals(s.action) ? "drop all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item)
+					: "clicker".equals(s.action) ? (s.clickCps == null || s.clickCps <= 0 ? "stop clicking"
+							: "keep " + s.clickButton + " clicking " + trim(s.clickCps) + " times a second")
 					: "flick".equals(s.action) ? (s.flickEvery == null || s.flickEvery <= 0 ? "stop the head flick"
 							: "head flick between " + s.flickMin + " and " + s.flickMax + " pitch, about every " + trim(s.flickEvery) + "s")
 					: "chest".equals(s.action) ? "take " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the chest you're looking at (up to " + (s.stacks > 0 ? s.stacks : 9) + " stacks)"
@@ -1002,7 +1032,7 @@ public final class KeyTimer implements ClientModInitializer {
 			i += run - 1;
 		}
 		source.sendFeedback(Text.literal("  loop: " + (config.loop ? "on" : "off")
-				+ "   /keytimer start [save] | stop | add | hold | move | wait | look | goto | refill | drop | stash | chest | flick | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
+				+ "   /keytimer start [save] | stop | add | hold | move | wait | look | goto | refill | drop | stash | chest | flick | clicker | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
 		return 1;
 	}
 
@@ -1043,6 +1073,7 @@ public final class KeyTimer implements ClientModInitializer {
 				.then(stashForm(action))
 				.then(chestForm(action))
 				.then(flickForm(action))
+				.then(clickerForm(action))
 				.then(gotoForm(action));
 	}
 
@@ -1111,6 +1142,26 @@ public final class KeyTimer implements ClientModInitializer {
 							}
 							return action.run(ctx, Step.inventory("stash", item, DoubleArgumentType.getDouble(ctx, "waitSeconds")));
 						})));
+	}
+
+	/** "clicker <left|right> <clicksPerSecond> <wait>" or "clicker off <wait>": keep clicking while the next steps run. */
+	private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> clickerForm(StepAction action) {
+		com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> node = literal("clicker");
+		node.then(literal("off").then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+			Step step = Step.inventory("clicker", null, DoubleArgumentType.getDouble(ctx, "waitSeconds"));
+			step.clickCps = 0.0;
+			return action.run(ctx, step);
+		})));
+		for (String button : List.of("left", "right")) {
+			node.then(literal(button).then(argument("cps", DoubleArgumentType.doubleArg(0.5, 40))
+					.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+						Step step = Step.inventory("clicker", null, DoubleArgumentType.getDouble(ctx, "waitSeconds"));
+						step.clickButton = button;
+						step.clickCps = DoubleArgumentType.getDouble(ctx, "cps");
+						return action.run(ctx, step);
+					}))));
+		}
+		return node;
 	}
 
 	/** "flick <minPitch> <maxPitch> <everySeconds> <wait>" or "flick off <wait>": random head movement up and down. */
@@ -1236,6 +1287,8 @@ public final class KeyTimer implements ClientModInitializer {
 	private static String describe(Step s) {
 		String what = "look".equals(s.action) ? "look at " + s.lookYaw + (s.lookPitch != null ? " / " + s.lookPitch : "")
 					: "drop".equals(s.action) ? "drop all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item)
+					: "clicker".equals(s.action) ? (s.clickCps == null || s.clickCps <= 0 ? "stop clicking"
+							: "keep " + s.clickButton + " clicking " + trim(s.clickCps) + " times a second")
 					: "flick".equals(s.action) ? (s.flickEvery == null || s.flickEvery <= 0 ? "stop the head flick"
 							: "head flick between " + s.flickMin + " and " + s.flickMax + " pitch, about every " + trim(s.flickEvery) + "s")
 					: "chest".equals(s.action) ? "take " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the chest you're looking at (up to " + (s.stacks > 0 ? s.stacks : 9) + " stacks)"
@@ -1277,7 +1330,8 @@ public final class KeyTimer implements ClientModInitializer {
 				&& a.blocks == b.blocks && java.util.Objects.equals(a.action, b.action) && java.util.Objects.equals(a.item, b.item) && a.stacks == b.stacks && a.wheatBelow == b.wheatBelow
 				&& java.util.Objects.equals(a.lookYaw, b.lookYaw) && java.util.Objects.equals(a.lookPitch, b.lookPitch)
 				&& java.util.Objects.equals(a.gotoAxis, b.gotoAxis) && java.util.Objects.equals(a.gotoCoord, b.gotoCoord)
-				&& java.util.Objects.equals(a.flickMin, b.flickMin) && java.util.Objects.equals(a.flickMax, b.flickMax) && java.util.Objects.equals(a.flickEvery, b.flickEvery);
+				&& java.util.Objects.equals(a.flickMin, b.flickMin) && java.util.Objects.equals(a.flickMax, b.flickMax) && java.util.Objects.equals(a.flickEvery, b.flickEvery)
+				&& java.util.Objects.equals(a.clickButton, b.clickButton) && java.util.Objects.equals(a.clickCps, b.clickCps);
 	}
 
 	private static String trim(double d) {

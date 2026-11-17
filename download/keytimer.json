@@ -2047,6 +2047,15 @@
           "flickEvery": 1.5
         },
         {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 0,
+          "action": "clicker",
+          "clickButton": "right",
+          "clickCps": 15.0
+        },
+        {
           "key": "s+d",
           "holdSeconds": 0,
           "waitSeconds": 0.3,
@@ -2069,6 +2078,15 @@
           "blocks": 0,
           "gotoAxis": "x",
           "gotoCoord": 113680.5
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 0,
+          "action": "clicker",
+          "clickButton": null,
+          "clickCps": 0.0
         },
         {
           "key": null,
