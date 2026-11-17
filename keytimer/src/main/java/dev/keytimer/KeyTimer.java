@@ -60,6 +60,9 @@ public final class KeyTimer implements ClientModInitializer {
 		/** look: the direction to face (pitch may be null to keep the current one). */
 		Float lookYaw;
 		Float lookPitch;
+		/** goto: hold {@code key} until your X or Z ("x"/"z") reaches {@code gotoCoord}, or you get stuck. */
+		String gotoAxis;
+		Double gotoCoord;
 
 		Step(String key, double holdSeconds, double waitSeconds) {
 			this.key = key;
@@ -70,6 +73,13 @@ public final class KeyTimer implements ClientModInitializer {
 		static Step move(String key, double blocks, double waitSeconds) {
 			Step step = new Step(key, 0, waitSeconds);
 			step.blocks = blocks;
+			return step;
+		}
+
+		static Step goTo(String key, String axis, double coord, double waitSeconds) {
+			Step step = new Step(key, 0, waitSeconds);
+			step.gotoAxis = axis;
+			step.gotoCoord = coord;
 			return step;
 		}
 
@@ -99,6 +109,8 @@ public final class KeyTimer implements ClientModInitializer {
 			step.wheatBelow = wheatBelow;
 			step.lookYaw = lookYaw;
 			step.lookPitch = lookPitch;
+			step.gotoAxis = gotoAxis;
+			step.gotoCoord = gotoCoord;
 			return step;
 		}
 	}
@@ -158,6 +170,10 @@ public final class KeyTimer implements ClientModInitializer {
 	private static boolean moveOnX;
 	private static int moveSign;
 	private static double moveTarget;
+	/** goto steps also stop when you stop making progress (hit a wall), so they can't hang. */
+	private static boolean gotoMode;
+	private static double progressPos;
+	private static long progressAt;
 	private static long moveDeadline;
 	private static long moveWaitNanos;
 
@@ -404,8 +420,17 @@ public final class KeyTimer implements ClientModInitializer {
 			double pos = moveOnX ? player.getX() : player.getZ();
 			double vel = Math.max(0, (moveOnX ? player.getVelocity().x : player.getVelocity().z) * moveSign);
 			double error = (moveTarget - pos) * moveSign - vel * SLIDE_FACTOR; // where we'd stop if we let go now
+			boolean stuck = false;
+			if (gotoMode) {
+				if (Math.abs(pos - progressPos) > 0.25) {
+					progressPos = pos;
+					progressAt = now;
+				} else if (now - progressAt > 1_500_000_000L) {
+					stuck = true; // no progress for 1.5 seconds: against a wall, so this step is done
+				}
+			}
 			// keep going while one more tick (moving about vel / 0.546) gets the stop closer to the target
-			if (error > vel / 0.546 / 2 && now < moveDeadline) {
+			if (error > vel / 0.546 / 2 && now < moveDeadline && !stuck) {
 				press(holdingKey, true);
 				return;
 			}
@@ -458,8 +483,13 @@ public final class KeyTimer implements ClientModInitializer {
 			for (InputUtil.Key k : key) {
 				KeyBinding.onKeyPressed(k);
 			}
-			if (step.blocks > 0) {
-				startMove(client.player, step);
+			if (step.blocks > 0 || step.gotoAxis != null) {
+				if (step.gotoAxis != null) {
+					startGoto(client.player, step, now);
+				} else {
+					gotoMode = false;
+					startMove(client.player, step);
+				}
 				holdingKey = key;
 				moving = true;
 				moveWaitNanos = (long) (step.waitSeconds * 1_000_000_000L);
@@ -507,6 +537,10 @@ public final class KeyTimer implements ClientModInitializer {
 			java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(step.item);
 			int[] guard = {0};
 			inventoryWork = () -> matches != null && guard[0]++ < 40 && dropOnce(client, matches);
+		} else if ("stash".equals(step.action)) {
+			java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(step.item);
+			int[] slot = {0};
+			inventoryWork = () -> matches != null && stashOnce(client, matches, slot);
 		} else if ("crafthay".equals(step.action)) {
 			int[] stage = {0, 0}; // [routine stage, hay stacks started]
 			int[] guard = {0};
@@ -557,6 +591,20 @@ public final class KeyTimer implements ClientModInitializer {
 			if (!stack.isEmpty() && matches.test(stack)) {
 				int screenSlot = i < 9 ? 36 + i : i;
 				click(client, screenSlot, 1, net.minecraft.screen.slot.SlotActionType.THROW); // like Ctrl+Q over the slot
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** Shift-clicks the next matching hotbar stack into the main inventory. False once every hotbar slot was checked. */
+	private static boolean stashOnce(MinecraftClient client, java.util.function.Predicate<net.minecraft.item.ItemStack> matches, int[] slot) {
+		net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
+		while (slot[0] < 9) {
+			int i = slot[0]++;
+			net.minecraft.item.ItemStack stack = inv.getStack(i);
+			if (!stack.isEmpty() && matches.test(stack)) {
+				click(client, 36 + i, 0, net.minecraft.screen.slot.SlotActionType.QUICK_MOVE); // hotbar -> main inventory
 				return true;
 			}
 		}
@@ -711,6 +759,19 @@ public final class KeyTimer implements ClientModInitializer {
 		moveDeadline = System.nanoTime() + (long) ((step.blocks / 2.0 + 2.0) * 1_000_000_000L);
 	}
 
+	/** Aims for an exact X or Z coordinate (F3 numbers), whichever way the keys take you there. */
+	private static void startGoto(ClientPlayerEntity player, Step step, long now) {
+		moveOnX = "x".equals(step.gotoAxis);
+		double pos = moveOnX ? player.getX() : player.getZ();
+		moveTarget = step.gotoCoord;
+		moveSign = moveTarget >= pos ? 1 : -1;
+		gotoMode = true;
+		progressPos = pos;
+		progressAt = now;
+		// generous: even walking slowly along a wall (about 1.5 blocks/second) gets there in time
+		moveDeadline = now + (long) ((Math.abs(moveTarget - pos) / 0.8 + 10.0) * 1_000_000_000L);
+	}
+
 	private static void start(java.util.function.Consumer<Text> feedback) {
 		if (config.steps.isEmpty()) {
 			feedback.accept(Text.literal("Key Timer has no steps. Add one with /keytimer add <key> <seconds>").formatted(Formatting.RED));
@@ -814,11 +875,13 @@ public final class KeyTimer implements ClientModInitializer {
 			}
 			String what = "look".equals(s.action) ? "look at " + s.lookYaw + (s.lookPitch != null ? " / " + s.lookPitch : "")
 					: "drop".equals(s.action) ? "drop all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item)
+					: "stash".equals(s.action) ? "move " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the hotbar into the inventory"
 					: "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ")
 							+ (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5).replace('_', ' ') : s.item) + " to the hotbar"
 					: "crafthay".equals(s.action) ? "craft " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "") + "hay bales into wheat"
 							+ (s.wheatBelow > 0 ? " if under " + s.wheatBelow + " wheat" : "")
 					: s.key == null ? "pause"
+					: s.gotoAxis != null ? "walk " + s.key + " until " + s.gotoAxis + " = " + trim(s.gotoCoord)
 					: s.blocks > 0 ? "move " + s.key + " " + trim(s.blocks) + " blocks"
 					: s.holdSeconds > 0 ? "hold " + s.key + " for " + trim(s.holdSeconds) + "s"
 					: "press " + s.key;
@@ -828,7 +891,7 @@ public final class KeyTimer implements ClientModInitializer {
 			i += run - 1;
 		}
 		source.sendFeedback(Text.literal("  loop: " + (config.loop ? "on" : "off")
-				+ "   /keytimer start [save] | stop | add | hold | move | wait | look | refill | drop | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
+				+ "   /keytimer start [save] | stop | add | hold | move | wait | look | goto | refill | drop | stash | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
 		return 1;
 	}
 
@@ -865,7 +928,9 @@ public final class KeyTimer implements ClientModInitializer {
 				.then(refillForm(action))
 				.then(craftHayForm(action))
 				.then(lookForm(action))
-				.then(dropForm(action));
+				.then(dropForm(action))
+				.then(stashForm(action))
+				.then(gotoForm(action));
 	}
 
 	/** "look <yaw> <wait>" or "look <yaw> <pitch> <wait>": turn to face an exact direction (F3 "Facing" numbers). */
@@ -902,6 +967,44 @@ public final class KeyTimer implements ClientModInitializer {
 							}
 							return action.run(ctx, Step.inventory("drop", item, DoubleArgumentType.getDouble(ctx, "waitSeconds")));
 						})));
+	}
+
+	/** "stash <item> <wait>" or "stash named <name> <wait>": move matching hotbar stacks into the main inventory. */
+	private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> stashForm(StepAction action) {
+		return literal("stash")
+				.then(literal("named").then(argument("name", StringArgumentType.string())
+						.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+							String name = StringArgumentType.getString(ctx, "name").trim();
+							return action.run(ctx, Step.inventory("stash", "name:" + name, DoubleArgumentType.getDouble(ctx, "waitSeconds")));
+						}))))
+				.then(argument("item", StringArgumentType.string())
+						.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+							String item = StringArgumentType.getString(ctx, "item").toLowerCase(Locale.ROOT);
+							if (itemMatcher(item) == null) {
+								ctx.getSource().sendError(Text.literal("Unknown item \"" + item + "\". Use stash named <name> for custom items"));
+								return 0;
+							}
+							return action.run(ctx, Step.inventory("stash", item, DoubleArgumentType.getDouble(ctx, "waitSeconds")));
+						})));
+	}
+
+	/** "goto <keys> <x|z> <coordinate> <wait>": hold the keys until that F3 coordinate is reached (or you hit a wall). */
+	private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> gotoForm(StepAction action) {
+		com.mojang.brigadier.builder.RequiredArgumentBuilder<FabricClientCommandSource, String> keyArg = argument("key", StringArgumentType.string());
+		keyArg.suggests((ctx, b) -> net.minecraft.command.CommandSource.suggestMatching(List.of("w", "a", "s", "d", "w+a", "w+d", "a+s", "s+d"), b));
+		for (String axis : List.of("x", "z")) {
+			keyArg.then(literal(axis).then(argument("coord", DoubleArgumentType.doubleArg(-30_000_000, 30_000_000))
+					.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+						String key = StringArgumentType.getString(ctx, "key").toLowerCase(Locale.ROOT);
+						if (parseKeys(key) == null) {
+							ctx.getSource().sendError(Text.literal("Unknown key \"" + key + "\""));
+							return 0;
+						}
+						return action.run(ctx, Step.goTo(key, axis, DoubleArgumentType.getDouble(ctx, "coord"),
+								DoubleArgumentType.getDouble(ctx, "waitSeconds")));
+					}))));
+		}
+		return literal("goto").then(keyArg);
 	}
 
 	/** "refill <item> <waitSeconds>": move every stack of the item from the inventory to the hotbar. */
@@ -977,12 +1080,14 @@ public final class KeyTimer implements ClientModInitializer {
 	private static String describe(Step s) {
 		String what = "look".equals(s.action) ? "look at " + s.lookYaw + (s.lookPitch != null ? " / " + s.lookPitch : "")
 					: "drop".equals(s.action) ? "drop all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item)
+					: "stash".equals(s.action) ? "move " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the hotbar into the inventory"
 					: "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ")
 							+ (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5).replace('_', ' ') : s.item) + " to the hotbar"
 					: "crafthay".equals(s.action) ? "craft " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "") + "hay bales into wheat"
 							+ (s.wheatBelow > 0 ? " if under " + s.wheatBelow + " wheat" : "")
 					: s.key == null ? "pause"
-				: s.blocks > 0 ? "move " + s.key + " " + trim(s.blocks) + " blocks"
+				: s.gotoAxis != null ? "walk " + s.key + " until " + s.gotoAxis + " = " + trim(s.gotoCoord)
+					: s.blocks > 0 ? "move " + s.key + " " + trim(s.blocks) + " blocks"
 				: s.holdSeconds > 0 ? "hold " + s.key + " for " + trim(s.holdSeconds) + "s"
 				: "press " + s.key;
 		return what + ", then wait " + trim(s.waitSeconds) + "s";
@@ -1011,7 +1116,8 @@ public final class KeyTimer implements ClientModInitializer {
 	private static boolean same(Step a, Step b) {
 		return java.util.Objects.equals(a.key, b.key) && a.holdSeconds == b.holdSeconds && a.waitSeconds == b.waitSeconds
 				&& a.blocks == b.blocks && java.util.Objects.equals(a.action, b.action) && java.util.Objects.equals(a.item, b.item) && a.stacks == b.stacks && a.wheatBelow == b.wheatBelow
-				&& java.util.Objects.equals(a.lookYaw, b.lookYaw) && java.util.Objects.equals(a.lookPitch, b.lookPitch);
+				&& java.util.Objects.equals(a.lookYaw, b.lookYaw) && java.util.Objects.equals(a.lookPitch, b.lookPitch)
+				&& java.util.Objects.equals(a.gotoAxis, b.gotoAxis) && java.util.Objects.equals(a.gotoCoord, b.gotoCoord);
 	}
 
 	private static String trim(double d) {

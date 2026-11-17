@@ -14,6 +14,8 @@ each: for example `1`, wait 60 s, `2`, wait 60 s, then (optionally) starts over.
 /keytimer move w+d 200 0   walk 200 blocks holding W and D (e.g. hugging a wall at an angle)
 /keytimer look -114 0      face yaw -114 (the first F3 "Facing" number); look -114 6.4 0 also sets pitch
 /keytimer drop named "Cow Curds" 0   open the inventory and drop every stack with that name
+/keytimer stash named Rennet 0      move every Rennet stack from the hotbar into the inventory
+/keytimer goto w+a x 113912.5 0     hold W+A until your X (F3) reaches 113912.5, or you walk into a wall
 /keytimer refill wheat 1   open the inventory and move all wheat to the hotbar, then wait 1 second
 /keytimer crafthay 1       craft hay bales into wheat (only while there's room), then wait 1 second
 /keytimer crafthay 1 1     same, but only one stack of hay bales
