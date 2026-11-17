@@ -2107,7 +2107,7 @@
           "waitSeconds": 0,
           "blocks": 0,
           "gotoAxis": "x",
-          "gotoCoord": 113680.5
+          "gotoCoord": 113682.3
         },
         {
           "key": null,
@@ -2129,28 +2129,12 @@
           "flickEvery": 0
         },
         {
-          "key": "s",
-          "holdSeconds": 0,
-          "waitSeconds": 0.3,
-          "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26082.6
-        },
-        {
-          "key": "d",
+          "key": "a",
           "holdSeconds": 0,
           "waitSeconds": 0,
           "blocks": 0,
           "gotoAxis": "x",
           "gotoCoord": 113681.5
-        },
-        {
-          "key": "w",
-          "holdSeconds": 0,
-          "waitSeconds": 0,
-          "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26080.45
         },
         {
           "key": null,
