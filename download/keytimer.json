@@ -1984,6 +1984,25 @@
         {
           "key": null,
           "holdSeconds": 0,
+          "waitSeconds": 0.4,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": 0,
+          "lookPitch": 30
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "action": "chest",
+          "item": "name:Rennet",
+          "stacks": 12,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
           "waitSeconds": 0.5,
           "blocks": 0,
           "action": "refill",
@@ -2241,9 +2260,32 @@
           "blocks": 0,
           "gotoAxis": "x",
           "gotoCoord": 113681.3
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": -180,
+          "lookPitch": 0
+        },
+        {
+          "key": "w",
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "gotoAxis": "z",
+          "gotoCoord": 26074.4
+        },
+        {
+          "key": "w+d+space",
+          "holdSeconds": 1.2,
+          "waitSeconds": 0.5,
+          "blocks": 0
         }
       ],
-      "loop": false
+      "loop": true
     }
   }
 }

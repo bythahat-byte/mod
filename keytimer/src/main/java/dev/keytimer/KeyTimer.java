@@ -165,6 +165,8 @@ public final class KeyTimer implements ClientModInitializer {
 	private static int inventoryDelay;
 	private static long inventoryWaitNanos;
 	private static boolean openedInventory;
+	/** A "chest" step is running: a chest screen being open is expected, not a reason to stop. */
+	private static boolean chestWork;
 
 	private static boolean moving;
 	private static boolean moveOnX;
@@ -402,7 +404,7 @@ public final class KeyTimer implements ClientModInitializer {
 		}
 		long now = System.nanoTime();
 		if (inventoryWork != null) {
-			if (client.currentScreen != null && !(client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen)) {
+			if (!chestWork && client.currentScreen != null && !(client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen)) {
 				finishInventory(client, now); // something else opened; skip the rest
 				return;
 			}
@@ -522,6 +524,10 @@ public final class KeyTimer implements ClientModInitializer {
 			nextStepAt = System.nanoTime() + inventoryWaitNanos; // still have enough wheat: nothing to do
 			return;
 		}
+		if ("chest".equals(step.action)) {
+			startChest(client, step);
+			return;
+		}
 		openedInventory = false;
 		if (client.currentScreen == null) {
 			client.setScreen(new net.minecraft.client.gui.screen.ingame.InventoryScreen(player));
@@ -554,11 +560,73 @@ public final class KeyTimer implements ClientModInitializer {
 	private static void finishInventory(MinecraftClient client, long now) {
 		inventoryWork = null;
 		if (openedInventory && client.player != null
-				&& client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen) {
+				&& (client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen
+						|| (chestWork && client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?>))) {
 			client.player.closeHandledScreen();
 		}
 		openedInventory = false;
+		chestWork = false;
 		nextStepAt = now + inventoryWaitNanos;
+	}
+
+	/**
+	 * Right-clicks the block you're looking at (a chest, barrel, ...), then shift-clicks matching
+	 * stacks out of it until you carry {@code stacks} stacks' worth (default 9), and closes it.
+	 */
+	private static void startChest(MinecraftClient client, Step step) {
+		ClientPlayerEntity player = client.player;
+		java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(step.item);
+		openedInventory = false;
+		if (matches == null || !(client.crosshairTarget instanceof net.minecraft.util.hit.BlockHitResult hit)
+				|| hit.getType() != net.minecraft.util.hit.HitResult.Type.BLOCK) {
+			actionBar(Text.literal("Key Timer: not looking at a chest, skipped that step").formatted(Formatting.RED));
+			nextStepAt = System.nanoTime() + inventoryWaitNanos;
+			return;
+		}
+		client.interactionManager.interactBlock(player, net.minecraft.util.Hand.MAIN_HAND, hit);
+		chestWork = true;
+		int want = (step.stacks > 0 ? step.stacks : 9) * 64;
+		int[] state = {0, 0, 0}; // [ticks waited for the screen, next slot to check, contents settled]
+		inventoryDelay = 0;
+		inventoryWork = () -> chestStep(client, matches, want, state);
+	}
+
+	private static boolean chestStep(MinecraftClient client, java.util.function.Predicate<net.minecraft.item.ItemStack> matches, int want, int[] state) {
+		if (!(client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?>)
+				|| client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen) {
+			if (state[0]++ < 40) {
+				return true; // wait up to 2 seconds for the chest to open
+			}
+			actionBar(Text.literal("Key Timer: the chest didn't open").formatted(Formatting.RED));
+			return false;
+		}
+		openedInventory = true; // close it when done
+		net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
+		int have = 0;
+		for (int i = 0; i < 36; i++) {
+			if (matches.test(inv.getStack(i))) {
+				have += inv.getStack(i).getCount();
+			}
+		}
+		if (have >= want) {
+			return false;
+		}
+		net.minecraft.screen.ScreenHandler handler = client.player.currentScreenHandler;
+		if (state[2] == 0) {
+			state[2] = 1; // first tick with the screen open: give its contents a moment to arrive
+			inventoryDelay = 3;
+			return true;
+		}
+		while (state[1] < handler.slots.size()) {
+			net.minecraft.screen.slot.Slot slot = handler.slots.get(state[1]++);
+			if (slot.inventory == inv || !slot.hasStack() || !matches.test(slot.getStack())) {
+				continue;
+			}
+			client.interactionManager.clickSlot(handler.syncId, slot.id, 0, net.minecraft.screen.slot.SlotActionType.QUICK_MOVE, client.player);
+			inventoryDelay = 1;
+			return true;
+		}
+		return false;
 	}
 
 	private static void click(MinecraftClient client, int slotId, int button, net.minecraft.screen.slot.SlotActionType type) {
@@ -800,10 +868,11 @@ public final class KeyTimer implements ClientModInitializer {
 			MinecraftClient client = MinecraftClient.getInstance();
 			inventoryWork = null;
 			if (openedInventory && client.player != null
-					&& client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen) {
+					&& (client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen || chestWork)) {
 				client.player.closeHandledScreen();
 			}
 			openedInventory = false;
+			chestWork = false;
 		}
 		if (was && feedback != null) {
 			feedback.accept(Text.literal("Key Timer stopped").formatted(Formatting.RED));
@@ -875,6 +944,7 @@ public final class KeyTimer implements ClientModInitializer {
 			}
 			String what = "look".equals(s.action) ? "look at " + s.lookYaw + (s.lookPitch != null ? " / " + s.lookPitch : "")
 					: "drop".equals(s.action) ? "drop all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item)
+					: "chest".equals(s.action) ? "take " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the chest you're looking at (up to " + (s.stacks > 0 ? s.stacks : 9) + " stacks)"
 					: "stash".equals(s.action) ? "move " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the hotbar into the inventory"
 					: "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ")
 							+ (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5).replace('_', ' ') : s.item) + " to the hotbar"
@@ -891,7 +961,7 @@ public final class KeyTimer implements ClientModInitializer {
 			i += run - 1;
 		}
 		source.sendFeedback(Text.literal("  loop: " + (config.loop ? "on" : "off")
-				+ "   /keytimer start [save] | stop | add | hold | move | wait | look | goto | refill | drop | stash | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
+				+ "   /keytimer start [save] | stop | add | hold | move | wait | look | goto | refill | drop | stash | chest | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
 		return 1;
 	}
 
@@ -930,12 +1000,25 @@ public final class KeyTimer implements ClientModInitializer {
 				.then(lookForm(action))
 				.then(dropForm(action))
 				.then(stashForm(action))
+				.then(chestForm(action))
 				.then(gotoForm(action));
 	}
 
 	/** "look <yaw> <wait>" or "look <yaw> <pitch> <wait>": turn to face an exact direction (F3 "Facing" numbers). */
 	private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> lookForm(StepAction action) {
-		return literal("look").then(argument("yaw", com.mojang.brigadier.arguments.FloatArgumentType.floatArg(-360, 360))
+		return literal("look")
+				.then(literal("here").then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+					// whatever direction you're facing right now
+					Step step = Step.inventory("look", null, DoubleArgumentType.getDouble(ctx, "waitSeconds"));
+					ClientPlayerEntity p = MinecraftClient.getInstance().player;
+					if (p == null) {
+						return 0;
+					}
+					step.lookYaw = Math.round(net.minecraft.util.math.MathHelper.wrapDegrees(p.getYaw()) * 10) / 10f;
+					step.lookPitch = Math.round(p.getPitch() * 10) / 10f;
+					return action.run(ctx, step);
+				})))
+				.then(argument("yaw", com.mojang.brigadier.arguments.FloatArgumentType.floatArg(-360, 360))
 				.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
 					Step step = Step.inventory("look", null, DoubleArgumentType.getDouble(ctx, "waitSeconds"));
 					step.lookYaw = com.mojang.brigadier.arguments.FloatArgumentType.getFloat(ctx, "yaw");
@@ -986,6 +1069,17 @@ public final class KeyTimer implements ClientModInitializer {
 							}
 							return action.run(ctx, Step.inventory("stash", item, DoubleArgumentType.getDouble(ctx, "waitSeconds")));
 						})));
+	}
+
+	/** "chest named <name> <wait> [stacks]": open the chest you're looking at and take that item until you carry that many stacks. */
+	private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> chestForm(StepAction action) {
+		return literal("chest").then(literal("named").then(argument("name", StringArgumentType.string())
+				.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400))
+						.executes(ctx -> action.run(ctx, Step.inventory("chest", "name:" + StringArgumentType.getString(ctx, "name").trim(),
+								DoubleArgumentType.getDouble(ctx, "waitSeconds"))))
+						.then(argument("stacks", IntegerArgumentType.integer(1, 36)).executes(ctx ->
+								action.run(ctx, Step.inventory("chest", "name:" + StringArgumentType.getString(ctx, "name").trim(),
+										DoubleArgumentType.getDouble(ctx, "waitSeconds")).withStacks(IntegerArgumentType.getInteger(ctx, "stacks"))))))));
 	}
 
 	/** "goto <keys> <x|z> <coordinate> <wait>": hold the keys until that F3 coordinate is reached (or you hit a wall). */
@@ -1080,6 +1174,7 @@ public final class KeyTimer implements ClientModInitializer {
 	private static String describe(Step s) {
 		String what = "look".equals(s.action) ? "look at " + s.lookYaw + (s.lookPitch != null ? " / " + s.lookPitch : "")
 					: "drop".equals(s.action) ? "drop all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item)
+					: "chest".equals(s.action) ? "take " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the chest you're looking at (up to " + (s.stacks > 0 ? s.stacks : 9) + " stacks)"
 					: "stash".equals(s.action) ? "move " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the hotbar into the inventory"
 					: "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ")
 							+ (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5).replace('_', ' ') : s.item) + " to the hotbar"
