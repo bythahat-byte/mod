@@ -2044,7 +2044,7 @@
           "action": "flick",
           "flickMin": 40,
           "flickMax": 50,
-          "flickEvery": 1.5
+          "flickEvery": 0.05
         },
         {
           "key": null,

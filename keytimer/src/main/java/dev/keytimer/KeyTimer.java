@@ -426,15 +426,17 @@ public final class KeyTimer implements ClientModInitializer {
 		}
 		long now = System.nanoTime();
 		if (flicking && client.currentScreen == null) {
-			if (now >= nextFlickAt) {
-				flickTarget = flickLow + RANDOM.nextFloat() * (flickHigh - flickLow);
-				// not on an exact beat: somewhere between 0.6x and 1.4x the interval
-				nextFlickAt = now + (long) (flickEverySeconds * (0.6 + RANDOM.nextDouble() * 0.8) * 1_000_000_000L);
-			}
-			float pitch = client.player.getPitch();
-			float diff = flickTarget - pitch;
-			if (Math.abs(diff) > 0.05f) {
-				client.player.setPitch(pitch + Math.max(-4f, Math.min(4f, diff))); // a quick turn over a few ticks
+			if (now >= nextFlickAt - 5_000_000L) {
+				if (flickEverySeconds <= 0.1) {
+					// fast: snap between the two angles every time
+					flickTarget = Math.abs(client.player.getPitch() - flickLow) < Math.abs(client.player.getPitch() - flickHigh) ? flickHigh : flickLow;
+					nextFlickAt = now + (long) (flickEverySeconds * 1_000_000_000L);
+				} else {
+					flickTarget = flickLow + RANDOM.nextFloat() * (flickHigh - flickLow);
+					// not on an exact beat: somewhere between 0.6x and 1.4x the interval
+					nextFlickAt = now + (long) (flickEverySeconds * (0.6 + RANDOM.nextDouble() * 0.8) * 1_000_000_000L);
+				}
+				client.player.setPitch(flickTarget); // a flick: snap straight there
 			}
 		}
 		if (clicking && client.currentScreen == null) {
@@ -1174,7 +1176,7 @@ public final class KeyTimer implements ClientModInitializer {
 				})))
 				.then(argument("minPitch", com.mojang.brigadier.arguments.FloatArgumentType.floatArg(-90, 90))
 						.then(argument("maxPitch", com.mojang.brigadier.arguments.FloatArgumentType.floatArg(-90, 90))
-								.then(argument("everySeconds", DoubleArgumentType.doubleArg(0.1, 600))
+								.then(argument("everySeconds", DoubleArgumentType.doubleArg(0.05, 600))
 										.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
 											Step step = Step.inventory("flick", null, DoubleArgumentType.getDouble(ctx, "waitSeconds"));
 											step.flickMin = com.mojang.brigadier.arguments.FloatArgumentType.getFloat(ctx, "minPitch");
