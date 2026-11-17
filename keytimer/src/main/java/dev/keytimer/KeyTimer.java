@@ -517,6 +517,18 @@ public final class KeyTimer implements ClientModInitializer {
 			nextStepAt = now + (long) (step.waitSeconds * 1_000_000_000L);
 			return;
 		}
+		if ("select".equals(step.action)) {
+			stepIndex++;
+			int slot = findHotbarSlot(client.player.getInventory(), step.item);
+			if (slot >= 0) {
+				KeyBinding binding = client.options.hotbarKeys[slot];
+				KeyBinding.onKeyPressed(InputUtil.fromTranslationKey(binding.getBoundKeyTranslationKey())); // like pressing 1-9
+			} else {
+				actionBar(Text.literal("Key Timer: none of " + step.item.replace("|", ", ") + " in your hotbar").formatted(Formatting.RED));
+			}
+			nextStepAt = now + (long) (step.waitSeconds * 1_000_000_000L);
+			return;
+		}
 		if ("clicker".equals(step.action)) {
 			stepIndex++;
 			clicking = step.clickCps != null && step.clickCps > 0;
@@ -640,6 +652,27 @@ public final class KeyTimer implements ClientModInitializer {
 	 * Right-clicks the block you're looking at (a chest, barrel, ...), then shift-clicks matching
 	 * stacks out of it until you carry {@code stacks} stacks' worth (default 9), and closes it.
 	 */
+	/**
+	 * First hotbar slot holding any of the items in {@code spec} ("bucket|Sheep's Milk|Cow's Milk"):
+	 * each part is an item id like bucket, or else the name shown on the item. Earlier parts win.
+	 */
+	private static int findHotbarSlot(net.minecraft.entity.player.PlayerInventory inv, String spec) {
+		for (String part : spec.split("\\|")) {
+			String p = part.trim();
+			if (p.isEmpty()) {
+				continue;
+			}
+			java.util.function.Predicate<net.minecraft.item.ItemStack> matches = p.startsWith("name:") ? itemMatcher(p)
+					: parseItem(p.toLowerCase(Locale.ROOT)) != null ? itemMatcher(p.toLowerCase(Locale.ROOT)) : itemMatcher("name:" + p);
+			for (int i = 0; i < 9; i++) {
+				if (!inv.getStack(i).isEmpty() && matches.test(inv.getStack(i))) {
+					return i;
+				}
+			}
+		}
+		return -1;
+	}
+
 	private static void startChest(MinecraftClient client, Step step) {
 		ClientPlayerEntity player = client.player;
 		java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(step.item);
@@ -1013,6 +1046,7 @@ public final class KeyTimer implements ClientModInitializer {
 			}
 			String what = "look".equals(s.action) ? "look at " + s.lookYaw + (s.lookPitch != null ? " / " + s.lookPitch : "")
 					: "drop".equals(s.action) ? "drop all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item)
+					: "select".equals(s.action) ? "hold the first of " + s.item.replace("|", " / ") + " found in the hotbar"
 					: "clicker".equals(s.action) ? (s.clickCps == null || s.clickCps <= 0 ? "stop clicking"
 							: "keep " + s.clickButton + " clicking " + trim(s.clickCps) + " times a second")
 					: "flick".equals(s.action) ? (s.flickEvery == null || s.flickEvery <= 0 ? "stop the head flick"
@@ -1034,7 +1068,7 @@ public final class KeyTimer implements ClientModInitializer {
 			i += run - 1;
 		}
 		source.sendFeedback(Text.literal("  loop: " + (config.loop ? "on" : "off")
-				+ "   /keytimer start [save] | stop | add | hold | move | wait | look | goto | refill | drop | stash | chest | flick | clicker | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
+				+ "   /keytimer start [save] | stop | add | hold | move | wait | look | goto | refill | drop | stash | chest | flick | clicker | select | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
 		return 1;
 	}
 
@@ -1076,6 +1110,10 @@ public final class KeyTimer implements ClientModInitializer {
 				.then(chestForm(action))
 				.then(flickForm(action))
 				.then(clickerForm(action))
+				.then(literal("select").then(argument("items", StringArgumentType.string())
+						.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx ->
+								action.run(ctx, Step.inventory("select", StringArgumentType.getString(ctx, "items").trim(),
+										DoubleArgumentType.getDouble(ctx, "waitSeconds")))))))
 				.then(gotoForm(action));
 	}
 
@@ -1289,6 +1327,7 @@ public final class KeyTimer implements ClientModInitializer {
 	private static String describe(Step s) {
 		String what = "look".equals(s.action) ? "look at " + s.lookYaw + (s.lookPitch != null ? " / " + s.lookPitch : "")
 					: "drop".equals(s.action) ? "drop all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item)
+					: "select".equals(s.action) ? "hold the first of " + s.item.replace("|", " / ") + " found in the hotbar"
 					: "clicker".equals(s.action) ? (s.clickCps == null || s.clickCps <= 0 ? "stop clicking"
 							: "keep " + s.clickButton + " clicking " + trim(s.clickCps) + " times a second")
 					: "flick".equals(s.action) ? (s.flickEvery == null || s.flickEvery <= 0 ? "stop the head flick"

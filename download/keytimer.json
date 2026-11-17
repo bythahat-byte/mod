@@ -2003,10 +2003,40 @@
         {
           "key": null,
           "holdSeconds": 0,
-          "waitSeconds": 0.5,
+          "waitSeconds": 0.3,
           "blocks": 0,
           "action": "refill",
-          "item": "name:Rennet",
+          "item": "bucket",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "refill",
+          "item": "name:Sheep's Milk",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "refill",
+          "item": "name:Cow's Milk",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "action": "select",
+          "item": "bucket|Sheep's Milk|Cow's Milk",
           "stacks": 0,
           "wheatBelow": 0
         },
@@ -2135,6 +2165,46 @@
           "blocks": 0,
           "gotoAxis": "z",
           "gotoCoord": 26074.5
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "stash",
+          "item": "bucket",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "stash",
+          "item": "name:Sheep's Milk",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "stash",
+          "item": "name:Cow's Milk",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "action": "refill",
+          "item": "name:Rennet",
+          "stacks": 0,
+          "wheatBelow": 0
         },
         {
           "key": null,
