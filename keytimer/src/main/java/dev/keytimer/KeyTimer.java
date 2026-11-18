@@ -519,12 +519,18 @@ public final class KeyTimer implements ClientModInitializer {
 		}
 		if ("select".equals(step.action)) {
 			stepIndex++;
-			int slot = findHotbarSlot(client.player.getInventory(), step.item);
+			net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
+			int slot = findSlot(inv, step.item, 0, 9);
+			int fromInventory = slot < 0 ? findSlot(inv, step.item, 9, 36) : -1;
 			if (slot >= 0) {
 				KeyBinding binding = client.options.hotbarKeys[slot];
 				KeyBinding.onKeyPressed(InputUtil.fromTranslationKey(binding.getBoundKeyTranslationKey())); // like pressing 1-9
+			} else if (fromInventory >= 0) {
+				// not in the hotbar: swap it from the inventory into the slot you're holding (like pressing 1-9 over it)
+				client.interactionManager.clickSlot(client.player.playerScreenHandler.syncId, fromInventory,
+						inv.getSelectedSlot(), net.minecraft.screen.slot.SlotActionType.SWAP, client.player);
 			} else {
-				actionBar(Text.literal("Key Timer: none of " + step.item.replace("|", ", ") + " in your hotbar").formatted(Formatting.RED));
+				actionBar(Text.literal("Key Timer: none of " + step.item.replace("|", ", ") + " in your inventory").formatted(Formatting.RED));
 			}
 			nextStepAt = now + (long) (step.waitSeconds * 1_000_000_000L);
 			return;
@@ -656,7 +662,7 @@ public final class KeyTimer implements ClientModInitializer {
 	 * First hotbar slot holding any of the items in {@code spec} ("bucket|Sheep's Milk|Cow's Milk"):
 	 * each part is an item id like bucket, or else the name shown on the item. Earlier parts win.
 	 */
-	private static int findHotbarSlot(net.minecraft.entity.player.PlayerInventory inv, String spec) {
+	private static int findSlot(net.minecraft.entity.player.PlayerInventory inv, String spec, int from, int to) {
 		for (String part : spec.split("\\|")) {
 			String p = part.trim();
 			if (p.isEmpty()) {
@@ -664,7 +670,7 @@ public final class KeyTimer implements ClientModInitializer {
 			}
 			java.util.function.Predicate<net.minecraft.item.ItemStack> matches = p.startsWith("name:") ? itemMatcher(p)
 					: parseItem(p.toLowerCase(Locale.ROOT)) != null ? itemMatcher(p.toLowerCase(Locale.ROOT)) : itemMatcher("name:" + p);
-			for (int i = 0; i < 9; i++) {
+			for (int i = from; i < to; i++) {
 				if (!inv.getStack(i).isEmpty() && matches.test(inv.getStack(i))) {
 					return i;
 				}
@@ -1046,7 +1052,7 @@ public final class KeyTimer implements ClientModInitializer {
 			}
 			String what = "look".equals(s.action) ? "look at " + s.lookYaw + (s.lookPitch != null ? " / " + s.lookPitch : "")
 					: "drop".equals(s.action) ? "drop all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item)
-					: "select".equals(s.action) ? "hold the first of " + s.item.replace("|", " / ") + " found in the hotbar"
+					: "select".equals(s.action) ? "hold the first of " + s.item.replace("|", " / ") + " (hotbar first, then inventory)"
 					: "clicker".equals(s.action) ? (s.clickCps == null || s.clickCps <= 0 ? "stop clicking"
 							: "keep " + s.clickButton + " clicking " + trim(s.clickCps) + " times a second")
 					: "flick".equals(s.action) ? (s.flickEvery == null || s.flickEvery <= 0 ? "stop the head flick"
@@ -1327,7 +1333,7 @@ public final class KeyTimer implements ClientModInitializer {
 	private static String describe(Step s) {
 		String what = "look".equals(s.action) ? "look at " + s.lookYaw + (s.lookPitch != null ? " / " + s.lookPitch : "")
 					: "drop".equals(s.action) ? "drop all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item)
-					: "select".equals(s.action) ? "hold the first of " + s.item.replace("|", " / ") + " found in the hotbar"
+					: "select".equals(s.action) ? "hold the first of " + s.item.replace("|", " / ") + " (hotbar first, then inventory)"
 					: "clicker".equals(s.action) ? (s.clickCps == null || s.clickCps <= 0 ? "stop clicking"
 							: "keep " + s.clickButton + " clicking " + trim(s.clickCps) + " times a second")
 					: "flick".equals(s.action) ? (s.flickEvery == null || s.flickEvery <= 0 ? "stop the head flick"
