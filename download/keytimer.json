@@ -2256,6 +2256,24 @@
           "holdSeconds": 0,
           "waitSeconds": 0.3,
           "blocks": 0,
+          "action": "refill",
+          "item": "stick",
+          "stacks": 1,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "action": "select",
+          "item": "stick"
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
           "action": "look",
           "lookYaw": -114,
           "lookPitch": 9.7
