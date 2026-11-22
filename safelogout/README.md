@@ -9,7 +9,7 @@ Leaves the server as soon as a player on your enemy list comes online (appears i
 /safelogout add <name>      add an enemy
 /safelogout remove <name>   remove one
 /safelogout list            who's on your list and who's online
-/safelogout on | off        turn it on or off
+/safelogout on | off | toggle   turn it on or off (or press O; change the key in Controls)
 ```
 
 The list is saved in `config/safelogout.json`. Only works on servers that show players in the Tab list.

@@ -6,13 +6,18 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
+import org.lwjgl.glfw.GLFW;
 
 import java.io.Reader;
 import java.io.Writer;
@@ -42,6 +47,7 @@ public final class SafeLogout implements ClientModInitializer {
 
 	private static Config config = new Config();
 	private static Path configFile;
+	private static KeyBinding toggleKey;
 
 	private static ClientPlayNetworkHandler currentHandler;
 	private static ClientWorld currentWorld;
@@ -55,6 +61,18 @@ public final class SafeLogout implements ClientModInitializer {
 	public void onInitializeClient() {
 		configFile = FabricLoader.getInstance().getConfigDir().resolve("safelogout.json");
 		load();
+		KeyBinding.Category category = KeyBinding.Category.create(Identifier.of("safelogout", "main"));
+		toggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+				"key.safelogout.toggle", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_O, category));
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			while (toggleKey.wasPressed()) {
+				setEnabled(!config.enabled, text -> {
+					if (client.player != null) {
+						client.player.sendMessage(text, true);
+					}
+				});
+			}
+		});
 		ClientTickEvents.END_CLIENT_TICK.register(SafeLogout::tick);
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(literal("safelogout")
 				.executes(ctx -> status(ctx.getSource()::sendFeedback))
@@ -77,21 +95,21 @@ public final class SafeLogout implements ClientModInitializer {
 							return removed ? 1 : 0;
 						})))
 				.then(literal("list").executes(ctx -> status(ctx.getSource()::sendFeedback)))
-				.then(literal("on").executes(ctx -> {
-					config.enabled = true;
-					save();
-					// whoever is on right now counts as "already online"
-					presentAtJoin.clear();
-					presentAtJoin.addAll(onlineEnemies(MinecraftClient.getInstance()));
-					ctx.getSource().sendFeedback(Text.literal("Safe Logout is on").formatted(Formatting.GREEN));
-					return 1;
-				}))
-				.then(literal("off").executes(ctx -> {
-					config.enabled = false;
-					save();
-					ctx.getSource().sendFeedback(Text.literal("Safe Logout is off").formatted(Formatting.RED));
-					return 1;
-				}))));
+				.then(literal("on").executes(ctx -> setEnabled(true, ctx.getSource()::sendFeedback)))
+				.then(literal("off").executes(ctx -> setEnabled(false, ctx.getSource()::sendFeedback)))
+				.then(literal("toggle").executes(ctx -> setEnabled(!config.enabled, ctx.getSource()::sendFeedback)))));
+	}
+
+	private static int setEnabled(boolean on, java.util.function.Consumer<Text> feedback) {
+		config.enabled = on;
+		save();
+		if (on) {
+			// whoever is on right now counts as "already online"
+			presentAtJoin.clear();
+			presentAtJoin.addAll(onlineEnemies(MinecraftClient.getInstance()));
+		}
+		feedback.accept(Text.literal("Safe Logout is " + (on ? "ON" : "OFF")).formatted(on ? Formatting.GREEN : Formatting.RED));
+		return 1;
 	}
 
 	private static void tick(MinecraftClient client) {
