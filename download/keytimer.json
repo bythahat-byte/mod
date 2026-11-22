@@ -478,6 +478,15 @@
         {
           "key": null,
           "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": 0,
+          "lookPitch": 65
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
           "waitSeconds": 1,
           "blocks": 0,
           "action": "crafthay",
@@ -953,6 +962,15 @@
         {
           "key": null,
           "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": 0,
+          "lookPitch": 65
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
           "waitSeconds": 3,
           "blocks": 0
         },
@@ -1135,6 +1153,15 @@
     },
     "3": {
       "steps": [
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": 0,
+          "lookPitch": 65
+        },
         {
           "key": null,
           "holdSeconds": 0,
@@ -1724,6 +1751,15 @@
     },
     "4": {
       "steps": [
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": 0,
+          "lookPitch": 65
+        },
         {
           "key": null,
           "holdSeconds": 0,
