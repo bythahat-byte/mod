@@ -1,0 +1,19 @@
+{
+	"schemaVersion": 1,
+	"id": "safelogout",
+	"version": "${version}",
+	"name": "Safe Logout",
+	"description": "Leaves the server when a player on your enemy list comes online.",
+	"authors": ["bythahat"],
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["dev.safelogout.SafeLogout"]
+	},
+	"depends": {
+		"fabricloader": ">=0.17.0",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
