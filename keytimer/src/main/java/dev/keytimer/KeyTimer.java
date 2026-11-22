@@ -131,12 +131,17 @@ public final class KeyTimer implements ClientModInitializer {
 	public static final class Saved {
 		List<Step> steps = new ArrayList<>();
 		boolean loop = true;
+		/** Leave the server when you have fewer than leaveBelow of this item while running (null = off). */
+		String leaveItem;
+		int leaveBelow = 1;
 	}
 
 	public static final class Config {
 		List<Step> steps = new ArrayList<>();
 		/** Start over from the first step after the last one. */
 		boolean loop = true;
+		String leaveItem;
+		int leaveBelow = 1;
 		/** Named saves, e.g. "1" or "cowfarm". */
 		java.util.Map<String, Saved> saves = new java.util.TreeMap<>();
 	}
@@ -332,6 +337,24 @@ public final class KeyTimer implements ClientModInitializer {
 					save();
 					return list(ctx.getSource());
 				}))
+				.then(literal("leavewhenout")
+						.then(literal("off").executes(ctx -> {
+							config.leaveItem = null;
+							save();
+							ctx.getSource().sendFeedback(Text.literal("Won't leave the server when items run out").formatted(Formatting.YELLOW));
+							return 1;
+						}))
+						.then(literal("named").then(argument("name", StringArgumentType.string())
+								.executes(ctx -> setLeave(ctx.getSource(), "name:" + StringArgumentType.getString(ctx, "name").trim(), 1))
+								.then(argument("below", IntegerArgumentType.integer(1, 100000))
+										.executes(ctx -> setLeave(ctx.getSource(), "name:" + StringArgumentType.getString(ctx, "name").trim(),
+												IntegerArgumentType.getInteger(ctx, "below"))))))
+						.then(argument("item", StringArgumentType.string())
+								.suggests((ctx, b) -> net.minecraft.command.CommandSource.suggestMatching(List.of("hay_block", "wheat", "named", "off"), b))
+								.executes(ctx -> setLeave(ctx.getSource(), StringArgumentType.getString(ctx, "item").toLowerCase(Locale.ROOT), 1))
+								.then(argument("below", IntegerArgumentType.integer(1, 100000))
+										.executes(ctx -> setLeave(ctx.getSource(), StringArgumentType.getString(ctx, "item").toLowerCase(Locale.ROOT),
+												IntegerArgumentType.getInteger(ctx, "below"))))))
 				.then(literal("loop").then(argument("on", BoolArgumentType.bool()).executes(ctx -> {
 					config.loop = BoolArgumentType.getBool(ctx, "on");
 					save();
@@ -356,6 +379,8 @@ public final class KeyTimer implements ClientModInitializer {
 					Saved saved = new Saved();
 					saved.steps = copySteps(config.steps);
 					saved.loop = config.loop;
+					saved.leaveItem = config.leaveItem;
+					saved.leaveBelow = config.leaveBelow;
 					boolean replaced = config.saves.put(name, saved) != null;
 					save();
 					ctx.getSource().sendFeedback(Text.literal((replaced ? "Overwrote" : "Saved") + " \"" + name + "\" ("
@@ -425,6 +450,10 @@ public final class KeyTimer implements ClientModInitializer {
 			return;
 		}
 		long now = System.nanoTime();
+		checkLeave(client, now);
+		if (!running) {
+			return;
+		}
 		if (flicking && client.currentScreen == null) {
 			if (now >= nextFlickAt - 5_000_000L) {
 				if (flickEverySeconds <= 0.1) {
@@ -946,6 +975,60 @@ public final class KeyTimer implements ClientModInitializer {
 		moveDeadline = now + (long) ((Math.abs(moveTarget - pos) / 0.8 + 10.0) * 1_000_000_000L);
 	}
 
+	private static int setLeave(FabricClientCommandSource source, String item, int below) {
+		if (itemMatcher(item) == null) {
+			source.sendError(Text.literal("Unknown item \"" + item + "\". Use an id like hay_block, or leavewhenout named <name>"));
+			return 0;
+		}
+		config.leaveItem = item;
+		config.leaveBelow = below;
+		save();
+		source.sendFeedback(Text.literal("While running, you'll leave the server when you have " + (below <= 1 ? "no " : "fewer than " + below + " ")
+				+ (item.startsWith("name:") ? item.substring(5) : item) + " left. Remember /keytimer save <name> to keep this in a save.").formatted(Formatting.GREEN));
+		return 1;
+	}
+
+	/** Out-of-items check: only between steps with no screen open, and only once it has lasted 2 seconds. */
+	private static long outSince;
+
+	private static void checkLeave(MinecraftClient client, long now) {
+		if (config.leaveItem == null || inventoryWork != null || client.currentScreen != null) {
+			outSince = 0;
+			return;
+		}
+		java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(config.leaveItem);
+		if (matches == null) {
+			return;
+		}
+		net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
+		int count = 0;
+		for (int i = 0; i < inv.size(); i++) {
+			if (matches.test(inv.getStack(i))) {
+				count += inv.getStack(i).getCount();
+			}
+		}
+		if (matches.test(client.player.currentScreenHandler.getCursorStack())) {
+			count += client.player.currentScreenHandler.getCursorStack().getCount();
+		}
+		if (count >= Math.max(1, config.leaveBelow)) {
+			outSince = 0;
+			return;
+		}
+		if (outSince == 0) {
+			outSince = now;
+			return;
+		}
+		if (now - outSince < 2_000_000_000L) {
+			return;
+		}
+		outSince = 0;
+		String what = config.leaveItem.startsWith("name:") ? config.leaveItem.substring(5) : config.leaveItem;
+		stop(null);
+		if (client.getNetworkHandler() != null) {
+			client.getNetworkHandler().getConnection().disconnect(Text.literal("Key Timer: ran out of " + what + ", so you left the server."));
+		}
+	}
+
 	private static void start(java.util.function.Consumer<Text> feedback) {
 		if (config.steps.isEmpty()) {
 			feedback.accept(Text.literal("Key Timer has no steps. Add one with /keytimer add <key> <seconds>").formatted(Formatting.RED));
@@ -1074,6 +1157,9 @@ public final class KeyTimer implements ClientModInitializer {
 			i += run - 1;
 		}
 		source.sendFeedback(Text.literal("  loop: " + (config.loop ? "on" : "off")
+				+ "   leave when out: " + (config.leaveItem == null ? "off"
+						: (config.leaveItem.startsWith("name:") ? config.leaveItem.substring(5) : config.leaveItem)
+						+ (config.leaveBelow > 1 ? " (below " + config.leaveBelow + ")" : ""))
 				+ "   /keytimer start [save] | stop | add | hold | move | wait | look | goto | refill | drop | stash | chest | flick | clicker | select | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
 		return 1;
 	}
@@ -1362,6 +1448,8 @@ public final class KeyTimer implements ClientModInitializer {
 		stop(null);
 		config.steps = copySteps(saved.steps);
 		config.loop = saved.loop;
+		config.leaveItem = saved.leaveItem;
+		config.leaveBelow = saved.leaveBelow <= 0 ? 1 : saved.leaveBelow;
 		save();
 		source.sendFeedback(Text.literal("Loaded \"" + name + "\"").formatted(Formatting.GREEN));
 		return true;

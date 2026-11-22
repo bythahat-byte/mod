@@ -21,6 +21,8 @@ each: for example `1`, wait 60 s, `2`, wait 60 s, then (optionally) starts over.
 /keytimer flick off 0               stop the head flick
 /keytimer clicker right 15 0        keep right-clicking 15 times a second while the next steps run
 /keytimer clicker off 0             stop clicking
+/keytimer leavewhenout hay_block    while running, leave the server when you have no hay bales left (saved with each save)
+/keytimer leavewhenout off          turn that off
 /keytimer select "bucket|Sheep's Milk|Cow's Milk" 0   switch to the first hotbar slot holding one of these
 /keytimer goto w+a x 113912.5 0     hold W+A until your X (F3) reaches 113912.5, or you walk into a wall
 /keytimer refill wheat 1   open the inventory and move all wheat to the hotbar, then wait 1 second

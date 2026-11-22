@@ -955,7 +955,9 @@
           "blocks": 0
         }
       ],
-      "loop": true
+      "loop": true,
+      "leaveItem": "hay_block",
+      "leaveBelow": 1
     },
     "2": {
       "steps": [
@@ -1149,7 +1151,9 @@
           "blocks": 6
         }
       ],
-      "loop": false
+      "loop": false,
+      "leaveItem": "hay_block",
+      "leaveBelow": 1
     },
     "3": {
       "steps": [
@@ -1747,7 +1751,9 @@
           "blocks": 3
         }
       ],
-      "loop": false
+      "loop": false,
+      "leaveItem": "hay_block",
+      "leaveBelow": 1
     },
     "4": {
       "steps": [
@@ -2013,7 +2019,9 @@
           "blocks": 3
         }
       ],
-      "loop": false
+      "loop": false,
+      "leaveItem": "hay_block",
+      "leaveBelow": 1
     },
     "5": {
       "steps": [
