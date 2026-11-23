@@ -2118,7 +2118,7 @@
           "blocks": 0,
           "action": "look",
           "lookYaw": -180,
-          "lookPitch": 47
+          "lookPitch": 45
         },
         {
           "key": null,
@@ -2126,8 +2126,8 @@
           "waitSeconds": 0,
           "blocks": 0,
           "action": "flick",
-          "flickMin": 40,
-          "flickMax": 50,
+          "flickMin": 42,
+          "flickMax": 48,
           "flickEvery": 0.05
         },
         {
