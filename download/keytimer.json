@@ -2049,6 +2049,16 @@
           "holdSeconds": 0,
           "waitSeconds": 0.3,
           "blocks": 0,
+          "action": "stash",
+          "item": "name:Rennet",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
           "action": "refill",
           "item": "bucket",
           "stacks": 0,
