@@ -43,6 +43,10 @@ public final class SafeLogout implements ClientModInitializer {
 	public static final class Config {
 		boolean enabled = true;
 		Set<String> enemies = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+		/** Admins: you leave after a short delay, and a quick relog by someone already online doesn't count. */
+		Set<String> admins = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+		double adminDelaySeconds = 3;
+		double relogGraceSeconds = 10;
 	}
 
 	private static Config config = new Config();
@@ -55,6 +59,10 @@ public final class SafeLogout implements ClientModInitializer {
 	/** Enemies (lower case) who were online when you joined; they don't kick you until they leave and return. */
 	private static final Set<String> presentAtJoin = new HashSet<>();
 	private static boolean announced;
+	/** Admins already counted as online who just left, and when (a rejoin within the grace time is ignored). */
+	private static final java.util.Map<String, Long> leftAt = new java.util.HashMap<>();
+	/** Admins who just came online, and when (you leave once they've stayed for the delay). */
+	private static final java.util.Map<String, Long> pendingSince = new java.util.HashMap<>();
 	private static boolean leaving;
 
 	@Override
@@ -94,6 +102,42 @@ public final class SafeLogout implements ClientModInitializer {
 									.formatted(removed ? Formatting.GREEN : Formatting.RED));
 							return removed ? 1 : 0;
 						})))
+				.then(literal("admin")
+						.then(literal("add").then(argument("name", StringArgumentType.word()).executes(ctx -> {
+							String name = StringArgumentType.getString(ctx, "name");
+							config.admins.add(name);
+							save();
+							ctx.getSource().sendFeedback(Text.literal("Added admin " + name + ": you'll leave " + trim(config.adminDelaySeconds)
+									+ "s after they join, unless it's a quick relog").formatted(Formatting.GREEN));
+							return 1;
+						})))
+						.then(literal("remove").then(argument("name", StringArgumentType.word())
+								.suggests((ctx, b) -> net.minecraft.command.CommandSource.suggestMatching(config.admins, b))
+								.executes(ctx -> {
+									String name = StringArgumentType.getString(ctx, "name");
+									boolean removed = config.admins.remove(name);
+									String lower = name.toLowerCase(Locale.ROOT);
+									presentAtJoin.remove(lower);
+									leftAt.remove(lower);
+									pendingSince.remove(lower);
+									save();
+									ctx.getSource().sendFeedback(Text.literal(removed ? "Removed admin " + name : name + " isn't on your admin list")
+											.formatted(removed ? Formatting.GREEN : Formatting.RED));
+									return removed ? 1 : 0;
+								})))
+						.then(literal("delay").then(argument("seconds", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0, 60)).executes(ctx -> {
+							config.adminDelaySeconds = com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(ctx, "seconds");
+							save();
+							ctx.getSource().sendFeedback(Text.literal("You'll leave " + trim(config.adminDelaySeconds) + "s after an admin joins").formatted(Formatting.GREEN));
+							return 1;
+						})))
+						.then(literal("relog").then(argument("seconds", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0, 300)).executes(ctx -> {
+							config.relogGraceSeconds = com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(ctx, "seconds");
+							save();
+							ctx.getSource().sendFeedback(Text.literal("An admin who was already on can relog within " + trim(config.relogGraceSeconds)
+									+ "s without you leaving").formatted(Formatting.GREEN));
+							return 1;
+						}))))
 				.then(literal("list").executes(ctx -> status(ctx.getSource()::sendFeedback)))
 				.then(literal("on").executes(ctx -> setEnabled(true, ctx.getSource()::sendFeedback)))
 				.then(literal("off").executes(ctx -> setEnabled(false, ctx.getSource()::sendFeedback)))
@@ -107,6 +151,8 @@ public final class SafeLogout implements ClientModInitializer {
 			// whoever is on right now counts as "already online"
 			presentAtJoin.clear();
 			presentAtJoin.addAll(onlineEnemies(MinecraftClient.getInstance()));
+			leftAt.clear();
+			pendingSince.clear();
 		}
 		feedback.accept(Text.literal("Safe Logout is " + (on ? "ON" : "OFF")).formatted(on ? Formatting.GREEN : Formatting.RED));
 		return 1;
@@ -128,11 +174,13 @@ public final class SafeLogout implements ClientModInitializer {
 			joinedAt = now;
 			if (newConnection) {
 				presentAtJoin.clear();
+				leftAt.clear();
+				pendingSince.clear();
 				leaving = false;
 			}
 			announced = false;
 		}
-		if (!config.enabled || leaving || config.enemies.isEmpty()) {
+		if (!config.enabled || leaving || (config.enemies.isEmpty() && config.admins.isEmpty())) {
 			return;
 		}
 		Set<String> online = onlineEnemies(client);
@@ -148,13 +196,47 @@ public final class SafeLogout implements ClientModInitializer {
 						.formatted(Formatting.YELLOW), false);
 			}
 		}
-		presentAtJoin.retainAll(online); // once they log off, their next join counts
+		long grace = (long) (config.relogGraceSeconds * 1e9);
+		for (java.util.Iterator<String> it = presentAtJoin.iterator(); it.hasNext(); ) {
+			String name = it.next();
+			if (online.contains(name)) {
+				leftAt.remove(name); // still here, or came back within the grace time
+				continue;
+			}
+			if (!isAdminOnly(name)) {
+				it.remove(); // enemies: once they log off, their next join counts
+				continue;
+			}
+			long since = leftAt.computeIfAbsent(name, n -> now);
+			if (now - since > grace) {
+				it.remove(); // gone longer than a relog: their next join counts
+				leftAt.remove(name);
+			}
+		}
+		pendingSince.keySet().retainAll(online); // an admin who left again before the delay doesn't count
 		for (String name : online) {
-			if (!presentAtJoin.contains(name)) {
+			if (presentAtJoin.contains(name)) {
+				continue;
+			}
+			if (!isAdminOnly(name)) {
+				leave(handler, name);
+				return;
+			}
+			long since = pendingSince.computeIfAbsent(name, n -> now);
+			if (now - since >= (long) (config.adminDelaySeconds * 1e9)) {
 				leave(handler, name);
 				return;
 			}
 		}
+	}
+
+	/** On the admin list but not the enemy list (enemies always mean leaving straight away). */
+	private static boolean isAdminOnly(String name) {
+		return config.admins.contains(name) && !config.enemies.contains(name);
+	}
+
+	private static String trim(double d) {
+		return d == Math.floor(d) ? String.valueOf((long) d) : String.valueOf(d);
 	}
 
 	private static void leave(ClientPlayNetworkHandler handler, String name) {
@@ -172,7 +254,7 @@ public final class SafeLogout implements ClientModInitializer {
 		}
 		for (PlayerListEntry entry : handler.getPlayerList()) {
 			String name = entry.getProfile().name();
-			if (name != null && config.enemies.contains(name)) {
+			if (name != null && (config.enemies.contains(name) || config.admins.contains(name))) {
 				found.add(name.toLowerCase(Locale.ROOT));
 			}
 		}
@@ -181,11 +263,25 @@ public final class SafeLogout implements ClientModInitializer {
 
 	private static int status(java.util.function.Consumer<Text> out) {
 		out.accept(Text.literal("Safe Logout is " + (config.enabled ? "on" : "off")).formatted(config.enabled ? Formatting.GREEN : Formatting.RED));
-		if (config.enemies.isEmpty()) {
-			out.accept(Text.literal("  No enemies yet. Add one with /safelogout add <name>").formatted(Formatting.GRAY));
+		if (config.enemies.isEmpty() && config.admins.isEmpty()) {
+			out.accept(Text.literal("  No one on your lists yet. /safelogout add <name> or /safelogout admin add <name>").formatted(Formatting.GRAY));
 			return 1;
 		}
 		Set<String> online = onlineEnemies(MinecraftClient.getInstance());
+		if (!config.admins.isEmpty()) {
+			out.accept(Text.literal("  Admins (leave after " + trim(config.adminDelaySeconds) + "s, relogs within "
+					+ trim(config.relogGraceSeconds) + "s ignored):").formatted(Formatting.GRAY));
+			for (String admin : config.admins) {
+				String lower = admin.toLowerCase(Locale.ROOT);
+				String state = !online.contains(lower) ? (presentAtJoin.contains(lower) ? "relogging" : "offline")
+						: presentAtJoin.contains(lower) ? "online (was on when you joined)"
+						: "online";
+				out.accept(Text.literal("    " + admin + ": " + state).formatted(online.contains(lower) ? Formatting.YELLOW : Formatting.WHITE));
+			}
+			if (!config.enemies.isEmpty()) {
+				out.accept(Text.literal("  Enemies (leave straight away):").formatted(Formatting.GRAY));
+			}
+		}
 		for (String enemy : config.enemies) {
 			String lower = enemy.toLowerCase(Locale.ROOT);
 			String state = !online.contains(lower) ? "offline"
@@ -211,6 +307,15 @@ public final class SafeLogout implements ClientModInitializer {
 			names.addAll(config.enemies);
 		}
 		config.enemies = names;
+		Set<String> admins = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+		if (config.admins != null) {
+			admins.addAll(config.admins);
+		}
+		config.admins = admins;
+		if (config.relogGraceSeconds <= 0 && config.adminDelaySeconds <= 0) {
+			config.adminDelaySeconds = 3;
+			config.relogGraceSeconds = 10;
+		}
 	}
 
 	private static void save() {
