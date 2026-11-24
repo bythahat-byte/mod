@@ -2529,6 +2529,12 @@
           "holdSeconds": 3.0,
           "waitSeconds": 0.5,
           "blocks": 0
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0.15,
+          "waitSeconds": 0.3,
+          "blocks": 0
         }
       ],
       "loop": true
