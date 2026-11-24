@@ -2491,7 +2491,7 @@
           "holdSeconds": 0,
           "waitSeconds": 0.3,
           "blocks": 0,
-          "action": "deposit",
+          "action": "drop",
           "item": "name:Cow Curds",
           "stacks": 0,
           "wheatBelow": 0
@@ -2501,7 +2501,7 @@
           "holdSeconds": 0,
           "waitSeconds": 0.3,
           "blocks": 0,
-          "action": "deposit",
+          "action": "drop",
           "item": "name:Sheep Curds",
           "stacks": 0,
           "wheatBelow": 0
