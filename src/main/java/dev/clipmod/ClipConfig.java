@@ -27,6 +27,8 @@ public final class ClipConfig {
 	public boolean convertToMp4 = true;
 	/** Path to the ffmpeg executable; empty = look for "ffmpeg" on the PATH. */
 	public String ffmpegPath = "";
+	/** Record the game's sound into clips (takes effect when the sound system restarts). */
+	public boolean audio = true;
 	/** Folder clips are written to; empty = ".minecraft/clips". */
 	public String outputFolder = "";
 

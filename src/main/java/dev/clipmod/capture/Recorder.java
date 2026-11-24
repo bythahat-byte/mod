@@ -69,6 +69,13 @@ public final class Recorder {
 		return file;
 	}
 
+	/** Capture time of the first frame in the finished video (valid after {@link #finish()}). */
+	public long firstTimestamp() {
+		synchronized (lock) {
+			return count > 0 ? timestamps[0] : startedAt;
+		}
+	}
+
 	public int fps() {
 		return fps;
 	}

@@ -3,7 +3,7 @@
 	"minVersion": "0.8",
 	"package": "dev.clipmod.mixin",
 	"compatibilityLevel": "JAVA_21",
-	"client": ["WindowMixin"],
+	"client": ["WindowMixin", "SoundEngineMixin", "SoundEngineAccessor"],
 	"injectors": {
 		"defaultRequire": 1
 	}

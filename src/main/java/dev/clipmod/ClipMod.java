@@ -47,6 +47,9 @@ public final class ClipMod implements ClientModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	private static ClipConfig config;
+	/** Sound for the recording in progress, and when it starts (System.nanoTime). */
+	private static dev.clipmod.audio.WavWriter recordingAudio;
+	private static long recordingAudioStart;
 	private static Path configFile;
 	private static ReplayBuffer buffer;
 	private static FrameCapturer capturer;
@@ -73,6 +76,7 @@ public final class ClipMod implements ClientModInitializer {
 	public void onInitializeClient() {
 		configFile = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID + ".json");
 		config = ClipConfig.load(configFile);
+		dev.clipmod.audio.AudioCapture.buffer().setLengthSeconds(config.bufferSeconds);
 		buffer = new ReplayBuffer(config.bufferSeconds);
 		capturer = new FrameCapturer(new FrameEncoder(buffer));
 
@@ -177,13 +181,16 @@ public final class ClipMod implements ClientModInitializer {
 			return;
 		}
 		double length = frames.size() / (double) fps;
+		byte[] audio = dev.clipmod.audio.AudioCapture.isActive()
+				? dev.clipmod.audio.AudioCapture.buffer().extract(frames.get(0).timestampNanos(), frames.size() * 1_000_000_000L / fps)
+				: null;
 		feedback.accept(info(String.format(Locale.ROOT, "Saving the last %.1fs...", length)));
 		Path folder = outputFolder();
 		boolean mp4 = config.convertToMp4;
 		String ffmpeg = config.ffmpegPath;
 		SAVER.execute(() -> {
 			try {
-				ClipWriter.Result result = ClipWriter.write(frames, fps, folder, mp4, ffmpeg);
+				ClipWriter.Result result = ClipWriter.write(frames, fps, folder, mp4, ffmpeg, audio);
 				MinecraftClient.getInstance().execute(() -> {
 					feedback.accept(prefix().append(Text.literal("Saved ").formatted(Formatting.GREEN))
 							.append(fileLink(result.file())));
@@ -196,6 +203,11 @@ public final class ClipMod implements ClientModInitializer {
 				MinecraftClient.getInstance().execute(() -> feedback.accept(error("Failed to save clip: " + t.getMessage())));
 			}
 		});
+	}
+
+	/** Whether game audio capture is wanted (read by the sound engine mixin when sound starts). */
+	public static boolean audioEnabled() {
+		return config == null || config.audio;
 	}
 
 	private static void toggleRecording(Consumer<Text> feedback) {
@@ -242,6 +254,18 @@ public final class ClipMod implements ClientModInitializer {
 		buffer.setListener(rec::accept);
 		List<EncodedFrame> leadIn = config.enabled ? buffer.rawFrames(config.bufferSeconds, size[0], size[1]) : List.of();
 		rec.prime(leadIn);
+		if (dev.clipmod.audio.AudioCapture.isActive()) {
+			try {
+				dev.clipmod.audio.WavWriter wav = new dev.clipmod.audio.WavWriter(
+						rec.file().resolveSibling(rec.file().getFileName().toString().replace(".avi", ".wav")));
+				long audioStart = leadIn.isEmpty() ? System.nanoTime() : leadIn.get(0).timestampNanos();
+				dev.clipmod.audio.AudioCapture.buffer().beginStream(audioStart, wav::append);
+				recordingAudio = wav;
+				recordingAudioStart = audioStart;
+			} catch (Exception e) {
+				LOGGER.warn("Couldn't record audio for this recording", e);
+			}
+		}
 		double seconds = leadIn.isEmpty() ? 0 : (leadIn.get(leadIn.size() - 1).timestampNanos() - leadIn.get(0).timestampNanos()) / 1e9;
 		feedback.accept(prefix().append(Text.literal("\u25CF Recording").formatted(Formatting.RED))
 				.append(Text.literal(String.format(Locale.ROOT, " (includes the last %.0fs). Press %s or /clip stop to finish.",
@@ -257,14 +281,30 @@ public final class ClipMod implements ClientModInitializer {
 		recorder = null;
 		buffer.setListener(null);
 		capturer.setForcedSize(0, 0);
+		dev.clipmod.audio.WavWriter wav = recordingAudio;
+		long audioStart = recordingAudioStart;
+		recordingAudio = null;
+		if (wav != null) {
+			dev.clipmod.audio.AudioCapture.buffer().endStream();
+		}
 		feedback.accept(info(String.format(Locale.ROOT, "Stopped recording after %s, saving...", formatTime(rec.elapsedSeconds()))));
 		Path folder = outputFolder();
 		boolean mp4 = config.convertToMp4;
 		String ffmpeg = config.ffmpegPath;
 		SAVER.execute(() -> {
 			try {
+				Path wavFile = null;
+				if (wav != null) {
+					try {
+						wav.close();
+						wavFile = wav.path();
+					} catch (Exception e) {
+						LOGGER.warn("Couldn't finish the recording's audio", e);
+					}
+				}
 				double length = rec.finish();
-				ClipWriter.Result result = ClipWriter.saveRecording(rec.file(), folder, mp4, ffmpeg);
+				double audioOffset = (audioStart - rec.firstTimestamp()) / 1e9;
+				ClipWriter.Result result = ClipWriter.saveRecording(rec.file(), folder, mp4, ffmpeg, wavFile, audioOffset);
 				MinecraftClient.getInstance().execute(() -> {
 					feedback.accept(prefix().append(Text.literal("Saved " + formatTime(length) + " recording ").formatted(Formatting.GREEN))
 							.append(fileLink(result.file())));
@@ -354,6 +394,7 @@ public final class ClipMod implements ClientModInitializer {
 								.executes(ctx -> run(ctx, f -> {
 									config.bufferSeconds = IntegerArgumentType.getInteger(ctx, "seconds");
 									buffer.setLengthSeconds(config.bufferSeconds);
+									dev.clipmod.audio.AudioCapture.buffer().setLengthSeconds(config.bufferSeconds);
 									saved(f, "Buffer length", config.bufferSeconds + "s");
 								}))))
 						.then(literal("fps").then(argument("fps", IntegerArgumentType.integer(1, 60))
@@ -375,6 +416,13 @@ public final class ClipMod implements ClientModInitializer {
 								.executes(ctx -> run(ctx, f -> {
 									config.convertToMp4 = BoolArgumentType.getBool(ctx, "enabled");
 									saved(f, "Convert to mp4", String.valueOf(config.convertToMp4));
+								}))))
+						.then(literal("audio").then(argument("enabled", BoolArgumentType.bool())
+								.executes(ctx -> run(ctx, f -> {
+									config.audio = BoolArgumentType.getBool(ctx, "enabled");
+									saved(f, "Game audio in clips", config.audio ? "on" : "off");
+									// restart the sound system so the change takes effect now
+									MinecraftClient.getInstance().getSoundManager().reloadSounds();
 								}))))));
 	}
 
@@ -401,6 +449,9 @@ public final class ClipMod implements ClientModInitializer {
 				buffer.durationSeconds(), config.bufferSeconds, buffer.frameCount(), buffer.bytes() / 1048576.0)));
 		f.accept(line("Capture: " + config.fps + " fps, " + (config.maxHeight == 0 ? "native" : "max " + config.maxHeight + "p")
 				+ String.format(Locale.ROOT, ", quality %.2f", config.quality)));
+		f.accept(line("Audio: " + (dev.clipmod.audio.AudioCapture.isActive() ? "recording game sound"
+				: !config.audio ? "off (/clip set audio true)"
+				: "not recording" + (dev.clipmod.audio.AudioCapture.failure() != null ? " (" + dev.clipmod.audio.AudioCapture.failure() + ")" : ""))));
 		String ffmpeg = ClipWriter.cachedFfmpeg(config.ffmpegPath);
 		f.accept(line("Format: " + (!config.convertToMp4 ? "avi" : ffmpeg == null ? "mp4 (checking ffmpeg...)"
 				: !ffmpeg.isEmpty() ? "mp4 (ffmpeg found: " + ffmpeg + ")" : "avi (ffmpeg not found)")));
@@ -415,7 +466,7 @@ public final class ClipMod implements ClientModInitializer {
 		f.accept(line("/clip on | off - start/stop the replay buffer"));
 		f.accept(line("/clip status - what's buffered, memory use, format"));
 		f.accept(line("/clip folder - open the clips folder"));
-		f.accept(line("/clip set length|fps|resolution|quality|mp4 <value>"));
+		f.accept(line("/clip set length|fps|resolution|quality|mp4|audio <value>"));
 	}
 
 	// ---------------------------------------------------------------- text helpers

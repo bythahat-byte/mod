@@ -15,7 +15,7 @@ OBS replay buffer, but built into the game.
 | Pause/resume the replay buffer | `/clip off` / `/clip on` (or bind "Toggle Replay Buffer" in Controls) |
 | See what's buffered and memory use | `/clip status` |
 | Open the clips folder | `/clip folder`, then click the link |
-| Change settings | `/clip set length <seconds>`, `/clip set fps <1-60>`, `/clip set resolution <height, 0 = native>`, `/clip set quality <0.1-1.0>`, `/clip set mp4 <true/false>` |
+| Change settings | `/clip set length <seconds>`, `/clip set fps <1-60>`, `/clip set resolution <height, 0 = native>`, `/clip set quality <0.1-1.0>`, `/clip set mp4 <true/false>`, `/clip set audio <true/false>` |
 | List commands | `/clip help` |
 
 Recordings are written straight into a video file while you play, so they can be long (up to
@@ -25,6 +25,14 @@ to mp4 fails, the .avi is kept. Window resizes during a recording are scaled to 
 
 Clips go to `.minecraft/clips/`. After saving, the chat message is a link you can click to open the clip.
 You can rebind the keys in Options → Controls → Key Binds → Clip Mod.
+
+### Game audio
+
+Clips and recordings include the game's sound. The mod switches Minecraft's OpenAL output to a
+loopback device, plays the mixed sound through your speakers itself and keeps the last few seconds
+for clips. The sound is merged into the .mp4 by ffmpeg; without ffmpeg it is saved as a .wav next to
+the .avi. Turn it off with `/clip set audio false` (the sound system restarts and Minecraft plays sound
+directly again). If loopback isn't available, the game falls back to its normal sound output.
 
 ### MP4 vs AVI
 
@@ -47,6 +55,7 @@ checked automatically, even when the launcher is opened from the Dock.
 | `maxHeight` | `720` | Clips are scaled down to this height (0 = native resolution) |
 | `quality` | `0.85` | JPEG quality of buffered frames |
 | `convertToMp4` | `true` | Convert to mp4 with ffmpeg when available |
+| `audio` | `true` | Record the game's sound into clips and recordings |
 | `ffmpegPath` | `""` | ffmpeg executable (empty = search PATH) |
 | `outputFolder` | `""` | Where clips are saved (empty = `.minecraft/clips`) |
 
