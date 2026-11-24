@@ -546,6 +546,26 @@ public final class KeyTimer implements ClientModInitializer {
 			nextStepAt = now + (long) (step.waitSeconds * 1_000_000_000L);
 			return;
 		}
+		if ("slot".equals(step.action)) {
+			stepIndex++;
+			net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
+			int target = Math.max(0, Math.min(8, step.stacks - 1));
+			if (findSlot(inv, step.item, target, target + 1) < 0) {
+				// not there yet: swap the first match (hotbar or inventory) into that slot, like pressing 1-9 over it
+				int from = findSlot(inv, step.item, 0, 36);
+				if (from >= 0) {
+					int screenSlot = from < 9 ? 36 + from : from;
+					client.interactionManager.clickSlot(client.player.playerScreenHandler.syncId, screenSlot, target,
+							net.minecraft.screen.slot.SlotActionType.SWAP, client.player);
+				} else {
+					actionBar(Text.literal("Key Timer: none of " + step.item.replace("|", ", ") + " in your inventory").formatted(Formatting.RED));
+				}
+			}
+			KeyBinding binding = client.options.hotbarKeys[target];
+			KeyBinding.onKeyPressed(InputUtil.fromTranslationKey(binding.getBoundKeyTranslationKey())); // move the selection there
+			nextStepAt = now + (long) (step.waitSeconds * 1_000_000_000L);
+			return;
+		}
 		if ("select".equals(step.action)) {
 			stepIndex++;
 			net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
@@ -1166,6 +1186,7 @@ public final class KeyTimer implements ClientModInitializer {
 			}
 			String what = "look".equals(s.action) ? "look at " + s.lookYaw + (s.lookPitch != null ? " / " + s.lookPitch : "")
 					: "drop".equals(s.action) ? "drop all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item)
+					: "slot".equals(s.action) ? "put the first of " + s.item.replace("|", " / ") + " in hotbar slot " + s.stacks + " and select it"
 					: "select".equals(s.action) ? "hold the first of " + s.item.replace("|", " / ") + " (hotbar first, then inventory)"
 					: "clicker".equals(s.action) ? (s.clickCps == null || s.clickCps <= 0 ? "stop clicking"
 							: "keep " + s.clickButton + " clicking " + trim(s.clickCps) + " times a second")
@@ -1192,7 +1213,7 @@ public final class KeyTimer implements ClientModInitializer {
 				+ "   leave when out: " + (config.leaveItem == null ? "off"
 						: (config.leaveItem.startsWith("name:") ? config.leaveItem.substring(5) : config.leaveItem)
 						+ (config.leaveBelow > 1 ? " (below " + config.leaveBelow + ")" : ""))
-				+ "   /keytimer start [save] | stop | add | hold | move | wait | look | goto | refill | drop | stash | chest | deposit | flick | clicker | select | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
+				+ "   /keytimer start [save] | stop | add | hold | move | wait | look | goto | refill | drop | stash | chest | deposit | flick | clicker | select | slot | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
 		return 1;
 	}
 
@@ -1248,6 +1269,11 @@ public final class KeyTimer implements ClientModInitializer {
 								}))))
 				.then(flickForm(action))
 				.then(clickerForm(action))
+				.then(literal("slot").then(argument("slot", IntegerArgumentType.integer(1, 9))
+						.then(argument("items", StringArgumentType.string())
+								.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx ->
+										action.run(ctx, Step.inventory("slot", StringArgumentType.getString(ctx, "items").trim(),
+												DoubleArgumentType.getDouble(ctx, "waitSeconds")).withStacks(IntegerArgumentType.getInteger(ctx, "slot"))))))))
 				.then(literal("select").then(argument("items", StringArgumentType.string())
 						.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx ->
 								action.run(ctx, Step.inventory("select", StringArgumentType.getString(ctx, "items").trim(),
@@ -1465,6 +1491,7 @@ public final class KeyTimer implements ClientModInitializer {
 	private static String describe(Step s) {
 		String what = "look".equals(s.action) ? "look at " + s.lookYaw + (s.lookPitch != null ? " / " + s.lookPitch : "")
 					: "drop".equals(s.action) ? "drop all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item)
+					: "slot".equals(s.action) ? "put the first of " + s.item.replace("|", " / ") + " in hotbar slot " + s.stacks + " and select it"
 					: "select".equals(s.action) ? "hold the first of " + s.item.replace("|", " / ") + " (hotbar first, then inventory)"
 					: "clicker".equals(s.action) ? (s.clickCps == null || s.clickCps <= 0 ? "stop clicking"
 							: "keep " + s.clickButton + " clicking " + trim(s.clickCps) + " times a second")

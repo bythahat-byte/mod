@@ -2089,9 +2089,9 @@
           "holdSeconds": 0,
           "waitSeconds": 0.2,
           "blocks": 0,
-          "action": "select",
-          "item": "bucket|Sheep's Milk|Cow's Milk",
-          "stacks": 0,
+          "action": "slot",
+          "item": "Cow's Milk|Sheep's Milk|bucket",
+          "stacks": 1,
           "wheatBelow": 0
         },
         {
