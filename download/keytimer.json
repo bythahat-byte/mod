@@ -2463,26 +2463,6 @@
         {
           "key": null,
           "holdSeconds": 0,
-          "waitSeconds": 0.3,
-          "blocks": 0,
-          "action": "drop",
-          "item": "name:Cow Curds",
-          "stacks": 0,
-          "wheatBelow": 0
-        },
-        {
-          "key": null,
-          "holdSeconds": 0,
-          "waitSeconds": 0.3,
-          "blocks": 0,
-          "action": "drop",
-          "item": "name:Sheep Curds",
-          "stacks": 0,
-          "wheatBelow": 0
-        },
-        {
-          "key": null,
-          "holdSeconds": 0,
           "waitSeconds": 0.2,
           "blocks": 0,
           "action": "look",
@@ -2496,6 +2476,44 @@
           "blocks": 0,
           "gotoAxis": "z",
           "gotoCoord": 26074.4
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": 120,
+          "lookPitch": 40
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "deposit",
+          "item": "name:Cow Curds",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "deposit",
+          "item": "name:Sheep Curds",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": -180,
+          "lookPitch": 0
         },
         {
           "key": "w+space",

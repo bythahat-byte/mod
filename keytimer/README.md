@@ -16,6 +16,7 @@ each: for example `1`, wait 60 s, `2`, wait 60 s, then (optionally) starts over.
 /keytimer drop named "Cow Curds" 0   open the inventory and drop every stack with that name
 /keytimer stash named Rennet 0      move every Rennet stack from the hotbar into the inventory
 /keytimer chest named Rennet 0.5 12 open the chest you're looking at and take Rennet until you carry 12 stacks
+/keytimer deposit named "Cow Curds" 0.3   open the chest/barrel you're looking at and put every Cow Curds stack in it
 /keytimer edit 1 look here 0.3      make step 1 face wherever you're looking right now
 /keytimer flick 40 50 1.5 0         keep moving your head to a random pitch between 40 and 50 (about every 1.5s)
 /keytimer flick off 0               stop the head flick

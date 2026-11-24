@@ -638,7 +638,7 @@ public final class KeyTimer implements ClientModInitializer {
 			nextStepAt = System.nanoTime() + inventoryWaitNanos; // still have enough wheat: nothing to do
 			return;
 		}
-		if ("chest".equals(step.action)) {
+		if ("chest".equals(step.action) || "deposit".equals(step.action)) {
 			startChest(client, step);
 			return;
 		}
@@ -723,7 +723,38 @@ public final class KeyTimer implements ClientModInitializer {
 		int want = (step.stacks > 0 ? step.stacks : 9) * 64;
 		int[] state = {0, 0, 0}; // [ticks waited for the screen, next slot to check, contents settled]
 		inventoryDelay = 0;
-		inventoryWork = () -> chestStep(client, matches, want, state);
+		boolean deposit = "deposit".equals(step.action);
+		inventoryWork = () -> deposit ? depositStep(client, matches, state) : chestStep(client, matches, want, state);
+	}
+
+	/** "deposit": shift-clicks every matching stack from your inventory into the open chest. */
+	private static boolean depositStep(MinecraftClient client, java.util.function.Predicate<net.minecraft.item.ItemStack> matches, int[] state) {
+		if (!(client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?>)
+				|| client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen) {
+			if (state[0]++ < 40) {
+				return true; // wait up to 2 seconds for the chest to open
+			}
+			actionBar(Text.literal("Key Timer: the chest didn't open").formatted(Formatting.RED));
+			return false;
+		}
+		openedInventory = true; // close it when done
+		if (state[2] == 0) {
+			state[2] = 1;
+			inventoryDelay = 3;
+			return true;
+		}
+		net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
+		net.minecraft.screen.ScreenHandler handler = client.player.currentScreenHandler;
+		while (state[1] < handler.slots.size()) {
+			net.minecraft.screen.slot.Slot slot = handler.slots.get(state[1]++);
+			if (slot.inventory != inv || !slot.hasStack() || !matches.test(slot.getStack())) {
+				continue;
+			}
+			client.interactionManager.clickSlot(handler.syncId, slot.id, 0, net.minecraft.screen.slot.SlotActionType.QUICK_MOVE, client.player);
+			inventoryDelay = 1;
+			return true;
+		}
+		return false;
 	}
 
 	private static boolean chestStep(MinecraftClient client, java.util.function.Predicate<net.minecraft.item.ItemStack> matches, int want, int[] state) {
@@ -1140,6 +1171,7 @@ public final class KeyTimer implements ClientModInitializer {
 							: "keep " + s.clickButton + " clicking " + trim(s.clickCps) + " times a second")
 					: "flick".equals(s.action) ? (s.flickEvery == null || s.flickEvery <= 0 ? "stop the head flick"
 							: "head flick between " + s.flickMin + " and " + s.flickMax + " pitch, about every " + trim(s.flickEvery) + "s")
+					: "deposit".equals(s.action) ? "put all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " into the chest you're looking at"
 					: "chest".equals(s.action) ? "take " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the chest you're looking at (up to " + (s.stacks > 0 ? s.stacks : 9) + " stacks)"
 					: "stash".equals(s.action) ? "move " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the hotbar into the inventory"
 					: "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ")
@@ -1160,7 +1192,7 @@ public final class KeyTimer implements ClientModInitializer {
 				+ "   leave when out: " + (config.leaveItem == null ? "off"
 						: (config.leaveItem.startsWith("name:") ? config.leaveItem.substring(5) : config.leaveItem)
 						+ (config.leaveBelow > 1 ? " (below " + config.leaveBelow + ")" : ""))
-				+ "   /keytimer start [save] | stop | add | hold | move | wait | look | goto | refill | drop | stash | chest | flick | clicker | select | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
+				+ "   /keytimer start [save] | stop | add | hold | move | wait | look | goto | refill | drop | stash | chest | deposit | flick | clicker | select | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
 		return 1;
 	}
 
@@ -1200,6 +1232,20 @@ public final class KeyTimer implements ClientModInitializer {
 				.then(dropForm(action))
 				.then(stashForm(action))
 				.then(chestForm(action))
+				.then(literal("deposit")
+						.then(literal("named").then(argument("name", StringArgumentType.string())
+								.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx ->
+										action.run(ctx, Step.inventory("deposit", "name:" + StringArgumentType.getString(ctx, "name").trim(),
+												DoubleArgumentType.getDouble(ctx, "waitSeconds")))))))
+						.then(argument("item", StringArgumentType.string())
+								.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+									String item = StringArgumentType.getString(ctx, "item").toLowerCase(Locale.ROOT);
+									if (itemMatcher(item) == null) {
+										ctx.getSource().sendError(Text.literal("Unknown item \"" + item + "\". Use deposit named <name> for custom items"));
+										return 0;
+									}
+									return action.run(ctx, Step.inventory("deposit", item, DoubleArgumentType.getDouble(ctx, "waitSeconds")));
+								}))))
 				.then(flickForm(action))
 				.then(clickerForm(action))
 				.then(literal("select").then(argument("items", StringArgumentType.string())
@@ -1424,6 +1470,7 @@ public final class KeyTimer implements ClientModInitializer {
 							: "keep " + s.clickButton + " clicking " + trim(s.clickCps) + " times a second")
 					: "flick".equals(s.action) ? (s.flickEvery == null || s.flickEvery <= 0 ? "stop the head flick"
 							: "head flick between " + s.flickMin + " and " + s.flickMax + " pitch, about every " + trim(s.flickEvery) + "s")
+					: "deposit".equals(s.action) ? "put all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " into the chest you're looking at"
 					: "chest".equals(s.action) ? "take " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the chest you're looking at (up to " + (s.stacks > 0 ? s.stacks : 9) + " stacks)"
 					: "stash".equals(s.action) ? "move " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the hotbar into the inventory"
 					: "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ")
