@@ -189,6 +189,7 @@ public final class KeyTimer implements ClientModInitializer {
 	private static float flickLow, flickHigh, flickTarget;
 	private static double flickEverySeconds;
 	private static long nextFlickAt;
+	private static int flickPhase;
 	private static final java.util.Random RANDOM = new java.util.Random();
 	/** Auto clicker: while on, presses the attack/use key clickRate times a second. */
 	private static boolean clicking;
@@ -457,8 +458,11 @@ public final class KeyTimer implements ClientModInitializer {
 		if (flicking && client.currentScreen == null) {
 			if (now >= nextFlickAt - 5_000_000L) {
 				if (flickEverySeconds <= 0.1) {
-					// fast: snap between the two angles every time
-					flickTarget = Math.abs(client.player.getPitch() - flickLow) < Math.abs(client.player.getPitch() - flickHigh) ? flickHigh : flickLow;
+					// fast: sweep up and down through the whole range in 4 steps (40, 42.7, 45.3, 48, 45.3, ...),
+					// so the angles in the middle get clicked too, not just the two ends
+					int k = flickPhase < 4 ? flickPhase : 6 - flickPhase;
+					flickTarget = flickLow + (flickHigh - flickLow) * k / 3f;
+					flickPhase = (flickPhase + 1) % 6;
 					nextFlickAt = now + (long) (flickEverySeconds * 1_000_000_000L);
 				} else {
 					flickTarget = flickLow + RANDOM.nextFloat() * (flickHigh - flickLow);
