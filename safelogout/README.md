@@ -1,18 +1,17 @@
 # Safe Logout
 
-Leaves the server as soon as a player on your enemy list comes online (appears in the Tab list).
+Leaves the server when a player on your list comes online (appears in the Tab list).
 
-- If an enemy is **already online when you join**, you stay. You'll get a yellow message saying so.
-- If that enemy **logs off and comes back**, or **anyone else on your list joins**, you leave straight away.
+- You leave a few seconds (3 by default) after they join. If they leave again before then, you stay.
+- If they were already online when you joined, you stay. If they log off and come back within 10 seconds
+  (a relog), you still stay; if they're gone longer, their next join counts.
 
 ```
-/safelogout add <name>      add an enemy
-/safelogout remove <name>   remove one
-/safelogout admin add <name>     add an admin (you leave a few seconds after they join)
-/safelogout admin remove <name>
-/safelogout admin delay <seconds>   how long to wait after an admin joins (default 3)
-/safelogout admin relog <seconds>   an admin who was already on can relog within this long without you leaving (default 10)
-/safelogout list            who's on your lists and who's online
+/safelogout add <name>      add someone
+/safelogout remove <name>   remove them
+/safelogout delay <seconds> how long to wait after someone joins (default 3)
+/safelogout relog <seconds> how long a relog can take without you leaving (default 10)
+/safelogout list            your list and who's online
 /safelogout on | off | toggle   turn it on or off (or press O; change the key in Controls)
 ```
 
