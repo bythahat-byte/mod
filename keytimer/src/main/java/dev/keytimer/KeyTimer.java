@@ -468,6 +468,7 @@ public final class KeyTimer implements ClientModInitializer {
 			return;
 		}
 		long now = System.nanoTime();
+		stopDrinkingMilk(client);
 		checkLeave(client, now);
 		if (!running) {
 			return;
@@ -1069,6 +1070,21 @@ public final class KeyTimer implements ClientModInitializer {
 		source.sendFeedback(Text.literal("While running, you'll leave the server when you have " + (below <= 1 ? "no " : "fewer than " + below + " ")
 				+ (item.startsWith("name:") ? item.substring(5) : item) + " left. Remember /keytimer save <name> to keep this in a save.").formatted(Formatting.GREEN));
 		return 1;
+	}
+
+	/**
+	 * While a route runs, never drink milk: a right-click that misses a vat would otherwise start
+	 * drinking and block every click for over a second. Cancelled the same tick it starts.
+	 */
+	private static void stopDrinkingMilk(MinecraftClient client) {
+		if (!client.player.isUsingItem()) {
+			return;
+		}
+		net.minecraft.item.ItemStack using = client.player.getActiveItem();
+		if (using.isOf(net.minecraft.item.Items.MILK_BUCKET)
+				|| using.getName().getString().toLowerCase(Locale.ROOT).contains("milk")) {
+			client.interactionManager.stopUsingItem(client.player);
+		}
 	}
 
 	/** Out-of-items check: only between steps with no screen open, and only once it has lasted 2 seconds. */
