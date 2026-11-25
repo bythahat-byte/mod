@@ -531,12 +531,19 @@
       "gotoCoord": 113684.0
     },
     {
+      "key": "w",
+      "holdSeconds": 0,
+      "waitSeconds": 0.1,
+      "blocks": 0,
+      "gotoAxis": "x",
+      "gotoCoord": 113681.5
+    },
+    {
       "key": null,
       "holdSeconds": 0,
       "waitSeconds": 0,
       "blocks": 0,
       "action": "clicker",
-      "clickButton": null,
       "clickCps": 0.0
     },
     {
@@ -546,17 +553,33 @@
       "blocks": 0,
       "action": "look",
       "lookYaw": -180,
-      "lookPitch": 0
+      "lookPitch": 9.7
     },
     {
-      "key": "a",
-      "holdSeconds": 0.7,
+      "key": "w",
+      "holdSeconds": 0,
+      "waitSeconds": 0.1,
+      "blocks": 0,
+      "gotoAxis": "z",
+      "gotoCoord": 26066.6
+    },
+    {
+      "key": "d",
+      "holdSeconds": 0.15,
       "waitSeconds": 0.1,
       "blocks": 0
     },
     {
-      "key": "d",
-      "holdSeconds": 0.08,
+      "key": "w",
+      "holdSeconds": 0,
+      "waitSeconds": 0.1,
+      "blocks": 0,
+      "gotoAxis": "z",
+      "gotoCoord": 26062.3
+    },
+    {
+      "key": "a",
+      "holdSeconds": 0.15,
       "waitSeconds": 0.1,
       "blocks": 0
     },
@@ -566,13 +589,7 @@
       "waitSeconds": 0.2,
       "blocks": 0,
       "gotoAxis": "z",
-      "gotoCoord": 26062.4
-    },
-    {
-      "key": "a",
-      "holdSeconds": 0.2,
-      "waitSeconds": 0.1,
-      "blocks": 0
+      "gotoCoord": 26061.9
     },
     {
       "key": null,
@@ -581,7 +598,7 @@
       "blocks": 0,
       "action": "look",
       "lookYaw": 144,
-      "lookPitch": 6.7
+      "lookPitch": 13
     },
     {
       "key": null,
@@ -3405,12 +3422,19 @@
           "gotoCoord": 113684.0
         },
         {
+          "key": "w",
+          "holdSeconds": 0,
+          "waitSeconds": 0.1,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 113681.5
+        },
+        {
           "key": null,
           "holdSeconds": 0,
           "waitSeconds": 0,
           "blocks": 0,
           "action": "clicker",
-          "clickButton": null,
           "clickCps": 0.0
         },
         {
@@ -3420,17 +3444,33 @@
           "blocks": 0,
           "action": "look",
           "lookYaw": -180,
-          "lookPitch": 0
+          "lookPitch": 9.7
         },
         {
-          "key": "a",
-          "holdSeconds": 0.7,
+          "key": "w",
+          "holdSeconds": 0,
+          "waitSeconds": 0.1,
+          "blocks": 0,
+          "gotoAxis": "z",
+          "gotoCoord": 26066.6
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0.15,
           "waitSeconds": 0.1,
           "blocks": 0
         },
         {
-          "key": "d",
-          "holdSeconds": 0.08,
+          "key": "w",
+          "holdSeconds": 0,
+          "waitSeconds": 0.1,
+          "blocks": 0,
+          "gotoAxis": "z",
+          "gotoCoord": 26062.3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0.15,
           "waitSeconds": 0.1,
           "blocks": 0
         },
@@ -3440,13 +3480,7 @@
           "waitSeconds": 0.2,
           "blocks": 0,
           "gotoAxis": "z",
-          "gotoCoord": 26062.4
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0.2,
-          "waitSeconds": 0.1,
-          "blocks": 0
+          "gotoCoord": 26061.9
         },
         {
           "key": null,
@@ -3455,7 +3489,7 @@
           "blocks": 0,
           "action": "look",
           "lookYaw": 144,
-          "lookPitch": 6.7
+          "lookPitch": 13
         },
         {
           "key": null,
