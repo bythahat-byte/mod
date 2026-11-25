@@ -262,6 +262,8 @@ final class Rejoin {
 		if (state == State.IDLE && !KeyTimer.isSuspended()) {
 			return false;
 		}
+		checkPlayers = false; // you asked to carry on: don't check the Safe Logout list
+		safeLogoutPending = false;
 		arrived(System.nanoTime());
 		return true;
 	}

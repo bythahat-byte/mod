@@ -939,7 +939,6 @@ public final class KeyTimer implements ClientModInitializer {
 			if (!stack.isEmpty() && matches.test(stack)) {
 				int screenSlot = i < 9 ? 36 + i : i;
 				click(client, screenSlot, 1, net.minecraft.screen.slot.SlotActionType.THROW); // like Ctrl+Q over the slot
-				inventoryDelay = 2; // give the server time to throw each stack
 				return true;
 			}
 		}
