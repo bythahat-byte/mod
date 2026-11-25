@@ -77,6 +77,12 @@ public final class ClipMod implements ClientModInitializer {
 		configFile = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID + ".json");
 		config = ClipConfig.load(configFile);
 		dev.clipmod.audio.AudioCapture.buffer().setLengthSeconds(config.bufferSeconds);
+		if (systemAudio()) {
+			String problem = dev.clipmod.audio.AudioCapture.startSystem(config.audioDevice);
+			if (problem != null) {
+				LOGGER.warn("Clip Mod: system audio not available: {}", problem);
+			}
+		}
 		buffer = new ReplayBuffer(config.bufferSeconds);
 		capturer = new FrameCapturer(new FrameEncoder(buffer));
 
@@ -208,6 +214,25 @@ public final class ClipMod implements ClientModInitializer {
 	/** Whether game audio capture is wanted (read by the sound engine mixin when sound starts). */
 	public static boolean audioEnabled() {
 		return config == null || config.audio;
+	}
+
+	/** Recording all of the Mac's sound (through BlackHole) instead of only the game. */
+	public static boolean systemAudio() {
+		return config != null && config.audio && "system".equals(config.audioSource);
+	}
+
+	/** Starts or stops system-audio recording and restarts the game's sound to match the settings. */
+	private static void applyAudioSettings(Consumer<Text> f) {
+		dev.clipmod.audio.AudioCapture.stopSystem();
+		if (systemAudio()) {
+			String problem = dev.clipmod.audio.AudioCapture.startSystem(config.audioDevice);
+			if (problem != null) {
+				f.accept(error("System audio: " + problem + ". See /clip audiodevices"));
+			} else {
+				f.accept(info("Recording all sounds from " + dev.clipmod.audio.AudioCapture.systemDeviceName()));
+			}
+		}
+		MinecraftClient.getInstance().getSoundManager().reloadSounds(); // switches the game's own capture on or off
 	}
 
 	private static void toggleRecording(Consumer<Text> feedback) {
@@ -385,6 +410,12 @@ public final class ClipMod implements ClientModInitializer {
 				.then(literal("on").executes(ctx -> run(ctx, f -> setEnabled(true, f))))
 				.then(literal("off").executes(ctx -> run(ctx, f -> setEnabled(false, f))))
 				.then(literal("status").executes(ctx -> run(ctx, ClipMod::status)))
+				.then(literal("audiodevices").executes(ctx -> run(ctx, f -> {
+					f.accept(info("Sound inputs you can record from (/clip set audiodevice <name>):"));
+					for (String name : dev.clipmod.audio.AudioCapture.inputDevices()) {
+						f.accept(line(name));
+					}
+				})))
 				.then(literal("folder").executes(ctx -> run(ctx, f -> f.accept(prefix()
 						.append(Text.literal("Clips folder: ").formatted(Formatting.GRAY))
 						.append(fileLink(outputFolder()))))))
@@ -420,9 +451,28 @@ public final class ClipMod implements ClientModInitializer {
 						.then(literal("audio").then(argument("enabled", BoolArgumentType.bool())
 								.executes(ctx -> run(ctx, f -> {
 									config.audio = BoolArgumentType.getBool(ctx, "enabled");
-									saved(f, "Game audio in clips", config.audio ? "on" : "off");
-									// restart the sound system so the change takes effect now
-									MinecraftClient.getInstance().getSoundManager().reloadSounds();
+									saved(f, "Audio in clips", config.audio ? "on" : "off");
+									applyAudioSettings(f);
+								}))))
+						.then(literal("audiosource")
+								.then(literal("game").executes(ctx -> run(ctx, f -> {
+									config.audioSource = "game";
+									saved(f, "Audio source", "game only");
+									applyAudioSettings(f);
+								})))
+								.then(literal("system").executes(ctx -> run(ctx, f -> {
+									config.audioSource = "system";
+									saved(f, "Audio source", "all sounds on your Mac (via BlackHole)");
+									applyAudioSettings(f);
+								}))))
+						.then(literal("audiodevice").then(argument("name", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+								.executes(ctx -> run(ctx, f -> {
+									String name = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "name").trim();
+									config.audioDevice = name.equalsIgnoreCase("auto") ? "" : name;
+									saved(f, "System audio input", config.audioDevice.isEmpty() ? "auto (BlackHole)" : config.audioDevice);
+									if (systemAudio()) {
+										applyAudioSettings(f);
+									}
 								}))))));
 	}
 
@@ -449,7 +499,8 @@ public final class ClipMod implements ClientModInitializer {
 				buffer.durationSeconds(), config.bufferSeconds, buffer.frameCount(), buffer.bytes() / 1048576.0)));
 		f.accept(line("Capture: " + config.fps + " fps, " + (config.maxHeight == 0 ? "native" : "max " + config.maxHeight + "p")
 				+ String.format(Locale.ROOT, ", quality %.2f", config.quality)));
-		f.accept(line("Audio: " + (dev.clipmod.audio.AudioCapture.isActive() ? "recording game sound"
+		f.accept(line("Audio: " + (dev.clipmod.audio.AudioCapture.isSystemActive() ? "recording all sounds from " + dev.clipmod.audio.AudioCapture.systemDeviceName()
+				: dev.clipmod.audio.AudioCapture.isActive() ? "recording game sound"
 				: !config.audio ? "off (/clip set audio true)"
 				: "not recording" + (dev.clipmod.audio.AudioCapture.failure() != null ? " (" + dev.clipmod.audio.AudioCapture.failure() + ")" : ""))));
 		String ffmpeg = ClipWriter.cachedFfmpeg(config.ffmpegPath);
@@ -467,6 +518,8 @@ public final class ClipMod implements ClientModInitializer {
 		f.accept(line("/clip status - what's buffered, memory use, format"));
 		f.accept(line("/clip folder - open the clips folder"));
 		f.accept(line("/clip set length|fps|resolution|quality|mp4|audio <value>"));
+		f.accept(line("/clip set audiosource game|system - game sound only, or every sound on your Mac (needs BlackHole)"));
+		f.accept(line("/clip audiodevices - list sound inputs; /clip set audiodevice <name|auto>"));
 	}
 
 	// ---------------------------------------------------------------- text helpers

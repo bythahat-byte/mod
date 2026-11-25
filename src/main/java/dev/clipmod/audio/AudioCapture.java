@@ -41,7 +41,126 @@ public final class AudioCapture {
 
 	/** True while game audio is being captured. */
 	public static boolean isActive() {
-		return running;
+		return running || sysRunning;
+	}
+
+	/** True when recording the whole Mac's sound from an input device (e.g. BlackHole) instead of just the game. */
+	public static boolean isSystemActive() {
+		return sysRunning;
+	}
+
+	// ---------------------------------------------------------------- system audio (all sounds, via a loopback input device)
+
+	private static volatile TargetDataLineHolder sys;
+	private static volatile boolean sysRunning;
+	private static volatile String sysDeviceName;
+
+	private record TargetDataLineHolder(javax.sound.sampled.TargetDataLine line, Thread thread) {
+	}
+
+	/** Names of the sound inputs Java can record from (BlackHole shows up here once installed). */
+	public static java.util.List<String> inputDevices() {
+		AudioFormat format = new AudioFormat(RATE, 16, 2, true, false);
+		DataLine.Info info = new DataLine.Info(javax.sound.sampled.TargetDataLine.class, format);
+		java.util.List<String> names = new java.util.ArrayList<>();
+		for (Mixer.Info mi : AudioSystem.getMixerInfo()) {
+			try {
+				if (AudioSystem.getMixer(mi).isLineSupported(info)) {
+					names.add(mi.getName());
+				}
+			} catch (Throwable ignored) {
+			}
+		}
+		return names;
+	}
+
+	public static String systemDeviceName() {
+		return sysDeviceName;
+	}
+
+	/**
+	 * Starts recording from an input device that carries all of the Mac's sound.
+	 *
+	 * @param wanted device name (or part of it); empty = the first one called BlackHole, Loopback or Soundflower
+	 * @return null on success, otherwise why it couldn't start
+	 */
+	public static String startSystem(String wanted) {
+		stopSystem();
+		AudioFormat format = new AudioFormat(RATE, 16, 2, true, false);
+		DataLine.Info info = new DataLine.Info(javax.sound.sampled.TargetDataLine.class, format);
+		Mixer.Info chosen = null;
+		String w = wanted == null ? "" : wanted.trim().toLowerCase(Locale.ROOT);
+		for (Mixer.Info mi : AudioSystem.getMixerInfo()) {
+			String name = mi.getName().toLowerCase(Locale.ROOT);
+			boolean match = w.isEmpty()
+					? name.contains("blackhole") || name.contains("loopback") || name.contains("soundflower")
+					: name.contains(w);
+			try {
+				if (match && AudioSystem.getMixer(mi).isLineSupported(info)) {
+					chosen = mi;
+					break;
+				}
+			} catch (Throwable ignored) {
+			}
+		}
+		if (chosen == null) {
+			failure = w.isEmpty() ? "no BlackHole input found (install BlackHole 2ch)" : "no input called \"" + wanted + "\"";
+			return failure;
+		}
+		try {
+			javax.sound.sampled.TargetDataLine line = (javax.sound.sampled.TargetDataLine) AudioSystem.getMixer(chosen).getLine(info);
+			line.open(format, RATE * BYTES_PER_FRAME / 10);
+			line.start();
+			BUFFER.clear();
+			sysRunning = true;
+			sysDeviceName = chosen.getName();
+			Thread t = new Thread(() -> systemPump(line), "ClipMod System Audio");
+			t.setDaemon(true);
+			t.setPriority(Thread.MAX_PRIORITY - 1);
+			sys = new TargetDataLineHolder(line, t);
+			t.start();
+			failure = null;
+			ClipMod.LOGGER.info("Clip Mod: recording system audio from {}", chosen.getName());
+			return null;
+		} catch (Throwable t) {
+			ClipMod.LOGGER.warn("Clip Mod: couldn't record from {}", chosen.getName(), t);
+			sysRunning = false;
+			failure = "couldn't open " + chosen.getName() + ": " + t.getMessage();
+			return failure;
+		}
+	}
+
+	private static void systemPump(javax.sound.sampled.TargetDataLine line) {
+		try {
+			while (sysRunning) {
+				byte[] chunk = new byte[CHUNK_FRAMES * BYTES_PER_FRAME];
+				int n = line.read(chunk, 0, chunk.length); // blocks until 10 ms of sound has arrived
+				if (n <= 0) {
+					continue;
+				}
+				BUFFER.add(System.nanoTime(), n == chunk.length ? chunk : java.util.Arrays.copyOf(chunk, n));
+			}
+		} catch (Throwable t) {
+			ClipMod.LOGGER.error("Clip Mod: system audio recording stopped", t);
+			failure = "system audio stopped: " + t.getMessage();
+		} finally {
+			sysRunning = false;
+		}
+	}
+
+	public static void stopSystem() {
+		sysRunning = false;
+		TargetDataLineHolder h = sys;
+		sys = null;
+		if (h != null) {
+			h.line().stop();
+			h.line().close();
+			try {
+				h.thread().join(1000);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		}
 	}
 
 	/** Why capture isn't running, or null. */
@@ -56,11 +175,14 @@ public final class AudioCapture {
 	 * @return the loopback device, or 0 to fall back to the normal device
 	 */
 	public static long openLoopback(String deviceName) {
-		failure = null;
 		if (!ClipMod.audioEnabled()) {
 			failure = "turned off";
 			return 0;
 		}
+		if (ClipMod.systemAudio()) {
+			return 0; // recording all sounds from BlackHole instead; the game plays sound normally
+		}
+		failure = null;
 		SourceDataLine l = openLine(deviceName);
 		if (l == null) {
 			return 0;

@@ -29,6 +29,10 @@ public final class ClipConfig {
 	public String ffmpegPath = "";
 	/** Record the game's sound into clips (takes effect when the sound system restarts). */
 	public boolean audio = true;
+	/** "game" = only Minecraft's sound; "system" = every sound on the computer, from an input like BlackHole. */
+	public String audioSource = "game";
+	/** System audio input to record from (part of its name); empty = find BlackHole automatically. */
+	public String audioDevice = "";
 	/** Folder clips are written to; empty = ".minecraft/clips". */
 	public String outputFolder = "";
 
@@ -39,6 +43,12 @@ public final class ClipConfig {
 		quality = Math.max(0.1f, Math.min(quality, 1.0f));
 		if (ffmpegPath == null) {
 			ffmpegPath = "";
+		}
+		if (audioSource == null || !(audioSource.equals("game") || audioSource.equals("system"))) {
+			audioSource = "game";
+		}
+		if (audioDevice == null) {
+			audioDevice = "";
 		}
 		if (outputFolder == null) {
 			outputFolder = "";

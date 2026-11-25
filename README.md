@@ -34,6 +34,12 @@ for clips. The sound is merged into the .mp4 by ffmpeg; without ffmpeg it is sav
 the .avi. Turn it off with `/clip set audio false` (the sound system restarts and Minecraft plays sound
 directly again). If loopback isn't available, the game falls back to its normal sound output.
 
+To record **every sound on your Mac** (Discord, music, etc.) instead, install the free
+[BlackHole 2ch](https://existential.audio/blackhole/) driver, create a Multi-Output Device in
+Audio MIDI Setup with your speakers and BlackHole, select it as your output, then run
+`/clip set audiosource system`. `/clip audiodevices` lists inputs; `/clip set audiodevice <name>` picks one.
+`/clip set audiosource game` goes back to game sound only.
+
 ### MP4 vs AVI
 
 The mod writes clips itself as Motion-JPEG `.avi`, which plays in VLC, Windows Media Player,
