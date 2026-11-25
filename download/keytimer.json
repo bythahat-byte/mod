@@ -531,12 +531,6 @@
       "gotoCoord": 113684.0
     },
     {
-      "key": "a",
-      "holdSeconds": 0.15,
-      "waitSeconds": 0.1,
-      "blocks": 0
-    },
-    {
       "key": null,
       "holdSeconds": 0,
       "waitSeconds": 0,
@@ -3409,12 +3403,6 @@
           "blocks": 0,
           "gotoAxis": "x",
           "gotoCoord": 113684.0
-        },
-        {
-          "key": "a",
-          "holdSeconds": 0.15,
-          "waitSeconds": 0.1,
-          "blocks": 0
         },
         {
           "key": null,
