@@ -29,6 +29,7 @@ each: for example `1`, wait 60 s, `2`, wait 60 s, then (optionally) starts over.
 /keytimer select "bucket|Sheep's Milk|Cow's Milk" 0   switch to the first hotbar slot holding one of these
 /keytimer slot 1 "Cow's Milk|Sheep's Milk|bucket" 0   put the first one found into hotbar slot 1 and select slot 1
 /keytimer goto w+a x 113912.5 0     hold W+A until your X (F3) reaches 113912.5, or you walk into a wall
+/keytimer goto s+d x 114143.5 0.3 2 the same, but never faster than 2 blocks a second (more clicks per block)
 /keytimer refill wheat 1   open the inventory and move all wheat to the hotbar, then wait 1 second
 /keytimer crafthay 1       craft hay bales into wheat (only while there's room), then wait 1 second
 /keytimer crafthay 1 1     same, but only one stack of hay bales

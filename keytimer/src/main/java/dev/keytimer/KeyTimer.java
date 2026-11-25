@@ -63,6 +63,8 @@ public final class KeyTimer implements ClientModInitializer {
 		/** goto: hold {@code key} until your X or Z ("x"/"z") reaches {@code gotoCoord}, or you get stuck. */
 		String gotoAxis;
 		Double gotoCoord;
+		/** goto: walk no faster than this many blocks a second along the axis (null = full speed). */
+		Double gotoSpeed;
 		/** flick: keep nudging your pitch to a random angle between these, every flickEvery seconds (0 = stop). */
 		Float flickMin;
 		Float flickMax;
@@ -118,6 +120,7 @@ public final class KeyTimer implements ClientModInitializer {
 			step.lookPitch = lookPitch;
 			step.gotoAxis = gotoAxis;
 			step.gotoCoord = gotoCoord;
+			step.gotoSpeed = gotoSpeed;
 			step.flickMin = flickMin;
 			step.flickMax = flickMax;
 			step.flickEvery = flickEvery;
@@ -204,6 +207,8 @@ public final class KeyTimer implements ClientModInitializer {
 	private static boolean gotoMode;
 	private static double progressPos;
 	private static long progressAt;
+	/** Speed limit for the current goto step in blocks per tick (0 = none). */
+	private static double gotoMaxPerTick;
 	private static long moveDeadline;
 	private static long moveWaitNanos;
 
@@ -523,7 +528,8 @@ public final class KeyTimer implements ClientModInitializer {
 			}
 			// keep going while one more tick (moving about vel / 0.546) gets the stop closer to the target
 			if (error > vel / 0.546 / 2 && now < moveDeadline && !stuck) {
-				press(holdingKey, true);
+				// speed limit: let go for a tick whenever we're going faster than allowed
+				press(holdingKey, !(gotoMode && gotoMaxPerTick > 0 && vel > gotoMaxPerTick));
 				return;
 			}
 			press(holdingKey, false);
@@ -1036,10 +1042,12 @@ public final class KeyTimer implements ClientModInitializer {
 		moveTarget = step.gotoCoord;
 		moveSign = moveTarget >= pos ? 1 : -1;
 		gotoMode = true;
+		gotoMaxPerTick = step.gotoSpeed != null && step.gotoSpeed > 0 ? step.gotoSpeed / 20.0 : 0;
 		progressPos = pos;
 		progressAt = now;
 		// generous: even walking slowly along a wall (about 1.5 blocks/second) gets there in time
-		moveDeadline = now + (long) ((Math.abs(moveTarget - pos) / 0.8 + 10.0) * 1_000_000_000L);
+		double slowest = gotoMaxPerTick > 0 ? Math.min(0.8, gotoMaxPerTick * 20 * 0.6) : 0.8;
+		moveDeadline = now + (long) ((Math.abs(moveTarget - pos) / slowest + 10.0) * 1_000_000_000L);
 	}
 
 	private static int setLeave(FabricClientCommandSource source, String item, int below) {
@@ -1227,7 +1235,7 @@ public final class KeyTimer implements ClientModInitializer {
 					: "crafthay".equals(s.action) ? "craft " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "") + "hay bales into wheat"
 							+ (s.wheatBelow > 0 ? " if under " + s.wheatBelow + " wheat" : "")
 					: s.key == null ? "pause"
-					: s.gotoAxis != null ? "walk " + s.key + " until " + s.gotoAxis + " = " + trim(s.gotoCoord)
+					: s.gotoAxis != null ? "walk " + s.key + " until " + s.gotoAxis + " = " + trim(s.gotoCoord) + (s.gotoSpeed != null ? " (max " + trim(s.gotoSpeed) + " blocks/s)" : "")
 					: s.blocks > 0 ? "move " + s.key + " " + trim(s.blocks) + " blocks"
 					: s.holdSeconds > 0 ? "hold " + s.key + " for " + trim(s.holdSeconds) + "s"
 					: "press " + s.key;
@@ -1432,17 +1440,22 @@ public final class KeyTimer implements ClientModInitializer {
 		keyArg.suggests((ctx, b) -> net.minecraft.command.CommandSource.suggestMatching(List.of("w", "a", "s", "d", "w+a", "w+d", "a+s", "s+d"), b));
 		for (String axis : List.of("x", "z")) {
 			keyArg.then(literal(axis).then(argument("coord", DoubleArgumentType.doubleArg(-30_000_000, 30_000_000))
-					.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
-						String key = StringArgumentType.getString(ctx, "key").toLowerCase(Locale.ROOT);
-						if (parseKeys(key) == null) {
-							ctx.getSource().sendError(Text.literal("Unknown key \"" + key + "\""));
-							return 0;
-						}
-						return action.run(ctx, Step.goTo(key, axis, DoubleArgumentType.getDouble(ctx, "coord"),
-								DoubleArgumentType.getDouble(ctx, "waitSeconds")));
-					}))));
+					.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> gotoStep(ctx, action, axis, null))
+							.then(argument("maxSpeed", DoubleArgumentType.doubleArg(0.2, 20)).executes(ctx ->
+									gotoStep(ctx, action, axis, DoubleArgumentType.getDouble(ctx, "maxSpeed")))))));
 		}
 		return literal("goto").then(keyArg);
+	}
+
+	private static int gotoStep(com.mojang.brigadier.context.CommandContext<FabricClientCommandSource> ctx, StepAction action, String axis, Double maxSpeed) {
+		String key = StringArgumentType.getString(ctx, "key").toLowerCase(Locale.ROOT);
+		if (parseKeys(key) == null) {
+			ctx.getSource().sendError(Text.literal("Unknown key \"" + key + "\""));
+			return 0;
+		}
+		Step step = Step.goTo(key, axis, DoubleArgumentType.getDouble(ctx, "coord"), DoubleArgumentType.getDouble(ctx, "waitSeconds"));
+		step.gotoSpeed = maxSpeed;
+		return action.run(ctx, step);
 	}
 
 	/** "refill <item> <waitSeconds>": move every stack of the item from the inventory to the hotbar. */
@@ -1532,7 +1545,7 @@ public final class KeyTimer implements ClientModInitializer {
 					: "crafthay".equals(s.action) ? "craft " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "") + "hay bales into wheat"
 							+ (s.wheatBelow > 0 ? " if under " + s.wheatBelow + " wheat" : "")
 					: s.key == null ? "pause"
-				: s.gotoAxis != null ? "walk " + s.key + " until " + s.gotoAxis + " = " + trim(s.gotoCoord)
+				: s.gotoAxis != null ? "walk " + s.key + " until " + s.gotoAxis + " = " + trim(s.gotoCoord) + (s.gotoSpeed != null ? " (max " + trim(s.gotoSpeed) + " blocks/s)" : "")
 					: s.blocks > 0 ? "move " + s.key + " " + trim(s.blocks) + " blocks"
 				: s.holdSeconds > 0 ? "hold " + s.key + " for " + trim(s.holdSeconds) + "s"
 				: "press " + s.key;
@@ -1565,7 +1578,7 @@ public final class KeyTimer implements ClientModInitializer {
 		return java.util.Objects.equals(a.key, b.key) && a.holdSeconds == b.holdSeconds && a.waitSeconds == b.waitSeconds
 				&& a.blocks == b.blocks && java.util.Objects.equals(a.action, b.action) && java.util.Objects.equals(a.item, b.item) && a.stacks == b.stacks && a.wheatBelow == b.wheatBelow
 				&& java.util.Objects.equals(a.lookYaw, b.lookYaw) && java.util.Objects.equals(a.lookPitch, b.lookPitch)
-				&& java.util.Objects.equals(a.gotoAxis, b.gotoAxis) && java.util.Objects.equals(a.gotoCoord, b.gotoCoord)
+				&& java.util.Objects.equals(a.gotoAxis, b.gotoAxis) && java.util.Objects.equals(a.gotoCoord, b.gotoCoord) && java.util.Objects.equals(a.gotoSpeed, b.gotoSpeed)
 				&& java.util.Objects.equals(a.flickMin, b.flickMin) && java.util.Objects.equals(a.flickMax, b.flickMax) && java.util.Objects.equals(a.flickEvery, b.flickEvery)
 				&& java.util.Objects.equals(a.clickButton, b.clickButton) && java.util.Objects.equals(a.clickCps, b.clickCps);
 	}
