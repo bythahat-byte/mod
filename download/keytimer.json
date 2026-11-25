@@ -1941,9 +1941,45 @@
           "holdSeconds": 0,
           "waitSeconds": 3,
           "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 3
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0.3,
+          "waitSeconds": 0,
+          "blocks": 0
+        },
+        {
+          "key": "w",
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 39
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 3
+        },
+        {
+          "key": "s",
+          "holdSeconds": 0.3,
+          "waitSeconds": 0,
+          "blocks": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 25,
+          "blocks": 0
         }
       ],
-      "loop": false,
+      "loop": true,
       "leaveItem": "hay_block",
       "leaveBelow": 1
     },
