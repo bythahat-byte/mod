@@ -365,12 +365,24 @@ public final class KeyTimer implements ClientModInitializer {
 					start(ctx.getSource()::sendFeedback);
 					return 1;
 				}).then(argument("save", StringArgumentType.word()).suggests(saveNames()).executes(ctx -> {
-					if (!loadSave(StringArgumentType.getString(ctx, "save"), ctx.getSource())) {
+					String name = StringArgumentType.getString(ctx, "save");
+					if (!config.saves.containsKey(name) && name.matches("\\d{1,4}")) {
+						// not a save: a step number in the current list
+						return start(ctx.getSource()::sendFeedback, Integer.parseInt(name)) ? 1 : 0;
+					}
+					if (!loadSave(name, ctx.getSource())) {
 						return 0;
 					}
 					start(ctx.getSource()::sendFeedback);
 					return 1;
-				})))
+				}).then(argument("step", IntegerArgumentType.integer(1)).executes(ctx -> {
+					if (!loadSave(StringArgumentType.getString(ctx, "save"), ctx.getSource())) {
+						return 0;
+					}
+					return start(ctx.getSource()::sendFeedback, IntegerArgumentType.getInteger(ctx, "step")) ? 1 : 0;
+				}))))
+				.then(literal("startat").then(argument("step", IntegerArgumentType.integer(1)).executes(ctx ->
+						start(ctx.getSource()::sendFeedback, IntegerArgumentType.getInteger(ctx, "step")) ? 1 : 0)))
 				.then(literal("save").then(argument("name", StringArgumentType.word()).suggests(saveNames()).executes(ctx -> {
 					String name = StringArgumentType.getString(ctx, "name");
 					if (config.steps.isEmpty()) {
@@ -1085,15 +1097,26 @@ public final class KeyTimer implements ClientModInitializer {
 	}
 
 	private static void start(java.util.function.Consumer<Text> feedback) {
+		start(feedback, 1);
+	}
+
+	/** Starts at step {@code firstStep} (1-based); the loop still goes back to step 1 afterwards. */
+	private static boolean start(java.util.function.Consumer<Text> feedback, int firstStep) {
 		if (config.steps.isEmpty()) {
 			feedback.accept(Text.literal("Key Timer has no steps. Add one with /keytimer add <key> <seconds>").formatted(Formatting.RED));
-			return;
+			return false;
 		}
+		if (firstStep < 1 || firstStep > config.steps.size()) {
+			feedback.accept(Text.literal("There is no step " + firstStep + " (the list has " + config.steps.size() + ")").formatted(Formatting.RED));
+			return false;
+		}
+		stop(null);
 		running = true;
-		stepIndex = 0;
+		stepIndex = firstStep - 1;
 		nextStepAt = 0; // first key right away
-		feedback.accept(Text.literal("Key Timer started (" + config.steps.size() + " steps"
+		feedback.accept(Text.literal("Key Timer started" + (firstStep > 1 ? " at step " + firstStep : "") + " (" + config.steps.size() + " steps"
 				+ (config.loop ? ", looping" : "") + ")").formatted(Formatting.GREEN));
+		return true;
 	}
 
 	private static void stop(java.util.function.Consumer<Text> feedback) {
@@ -1217,7 +1240,7 @@ public final class KeyTimer implements ClientModInitializer {
 				+ "   leave when out: " + (config.leaveItem == null ? "off"
 						: (config.leaveItem.startsWith("name:") ? config.leaveItem.substring(5) : config.leaveItem)
 						+ (config.leaveBelow > 1 ? " (below " + config.leaveBelow + ")" : ""))
-				+ "   /keytimer start [save] | stop | add | hold | move | wait | look | goto | refill | drop | stash | chest | deposit | flick | clicker | select | slot | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
+				+ "   /keytimer start [save] [step] | startat <step> | stop | add | hold | move | wait | look | goto | refill | drop | stash | chest | deposit | flick | clicker | select | slot | crafthay | repeat | edit <n> | insert <n> | remove <n> | clear | loop | save | load | saves").formatted(Formatting.DARK_GRAY));
 		return 1;
 	}
 

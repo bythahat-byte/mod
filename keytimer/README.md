@@ -24,6 +24,8 @@ each: for example `1`, wait 60 s, `2`, wait 60 s, then (optionally) starts over.
 /keytimer clicker off 0             stop clicking
 /keytimer leavewhenout hay_block    while running, leave the server when you have no hay bales left (saved with each save)
 /keytimer leavewhenout off          turn that off
+/keytimer start 5 10                load save 5 and start at step 10 (skip steps you've already done)
+/keytimer startat 10                start the loaded list at step 10
 /keytimer select "bucket|Sheep's Milk|Cow's Milk" 0   switch to the first hotbar slot holding one of these
 /keytimer slot 1 "Cow's Milk|Sheep's Milk|bucket" 0   put the first one found into hotbar slot 1 and select slot 1
 /keytimer goto w+a x 113912.5 0     hold W+A until your X (F3) reaches 113912.5, or you walk into a wall
