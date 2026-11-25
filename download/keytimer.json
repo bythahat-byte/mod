@@ -2728,6 +2728,620 @@
         }
       ],
       "loop": true
+    },
+    "6": {
+      "steps": [
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.4,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": 0,
+          "lookPitch": 30
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "action": "chest",
+          "item": "name:Rennet",
+          "stacks": 16,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "stash",
+          "item": "name:Rennet",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "refill",
+          "item": "bucket",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "refill",
+          "item": "name:Sheep's Milk",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "refill",
+          "item": "name:Cow's Milk",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "action": "slot",
+          "item": "Cow's Milk|Sheep's Milk|bucket",
+          "stacks": 1,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": -180,
+          "lookPitch": 0
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 113682.6
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": -180,
+          "lookPitch": 49
+        },
+        {
+          "key": "u",
+          "holdSeconds": 0.15,
+          "waitSeconds": 0,
+          "blocks": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 0,
+          "action": "clicker",
+          "clickButton": "right",
+          "clickCps": 20.0
+        },
+        {
+          "key": "s+d",
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 114143.5,
+          "gotoSpeed": 2.9
+        },
+        {
+          "key": "s",
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "gotoAxis": "z",
+          "gotoCoord": 26092.5
+        },
+        {
+          "key": "a+s",
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 113682.3,
+          "gotoSpeed": 2.9
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 0,
+          "action": "clicker",
+          "clickButton": null,
+          "clickCps": 0.0
+        },
+        {
+          "key": "u",
+          "holdSeconds": 0.15,
+          "waitSeconds": 0,
+          "blocks": 0
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 113681.5
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 2.5,
+          "blocks": 0
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 0.1,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 113681.65
+        },
+        {
+          "key": "w",
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "gotoAxis": "z",
+          "gotoCoord": 26086.5
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "stash",
+          "item": "bucket",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "stash",
+          "item": "name:Sheep's Milk",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "stash",
+          "item": "name:Cow's Milk",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "action": "refill",
+          "item": "name:Rennet",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": -180,
+          "lookPitch": 7
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 0,
+          "action": "clicker",
+          "clickButton": "right",
+          "clickCps": 20.0
+        },
+        {
+          "key": "s+d",
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 114142.6,
+          "gotoSpeed": 2.9
+        },
+        {
+          "key": "s",
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "gotoAxis": "z",
+          "gotoCoord": 26092.5
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "action": "refill",
+          "item": "name:Rennet",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": "a+s",
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 113681.5,
+          "gotoSpeed": 2.9
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 0,
+          "action": "clicker",
+          "clickButton": null,
+          "clickCps": 0.0
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 0.1,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 113681.65
+        },
+        {
+          "key": "w",
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "gotoAxis": "z",
+          "gotoCoord": 26086.5
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "action": "stash",
+          "item": "name:Rennet",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "refill",
+          "item": "stick",
+          "stacks": 1,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "action": "select",
+          "item": "stick"
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": -114,
+          "lookPitch": 9.7
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 0,
+          "action": "clicker",
+          "clickButton": "right",
+          "clickCps": 20.0
+        },
+        {
+          "key": "w+a",
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 113912.5
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "drop",
+          "item": "name:Cow Curds",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "drop",
+          "item": "name:Sheep Curds",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 0.1,
+          "blocks": 0,
+          "gotoAxis": "z",
+          "gotoCoord": 26086.9
+        },
+        {
+          "key": "w",
+          "holdSeconds": 0,
+          "waitSeconds": 0.1,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 113913.6
+        },
+        {
+          "key": "w+a",
+          "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 114142.5
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": -180,
+          "lookPitch": 17.5
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "drop",
+          "item": "name:Cow Curds",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "drop",
+          "item": "name:Sheep Curds",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": -114,
+          "lookPitch": 17.5
+        },
+        {
+          "key": "w",
+          "holdSeconds": 0,
+          "waitSeconds": 0.1,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 114142.7
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "gotoAxis": "z",
+          "gotoCoord": 26092.3
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": 114,
+          "lookPitch": 17.5
+        },
+        {
+          "key": "w+a",
+          "holdSeconds": 0,
+          "waitSeconds": 0.1,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 114141.3
+        },
+        {
+          "key": "w+d",
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 113912.3
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "drop",
+          "item": "name:Cow Curds",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "drop",
+          "item": "name:Sheep Curds",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": "a",
+          "holdSeconds": 0,
+          "waitSeconds": 0.1,
+          "blocks": 0,
+          "gotoAxis": "z",
+          "gotoCoord": 26092.9
+        },
+        {
+          "key": "w",
+          "holdSeconds": 0,
+          "waitSeconds": 0.1,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 113911.4
+        },
+        {
+          "key": "w+d",
+          "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 113681.3
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 0,
+          "action": "clicker",
+          "clickButton": null,
+          "clickCps": 0.0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": -180,
+          "lookPitch": 0
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 0.1,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 113681.65
+        },
+        {
+          "key": "w",
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "gotoAxis": "z",
+          "gotoCoord": 26086.4
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": 120,
+          "lookPitch": 40
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "drop",
+          "item": "name:Cow Curds",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "drop",
+          "item": "name:Sheep Curds",
+          "stacks": 0,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": -180,
+          "lookPitch": 0
+        },
+        {
+          "key": "w+space",
+          "holdSeconds": 3.0,
+          "waitSeconds": 0.5,
+          "blocks": 0
+        },
+        {
+          "key": "d",
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 113681.65
+        }
+      ],
+      "loop": true,
+      "leaveItem": null,
+      "leaveBelow": 1
     }
   },
   "leaveItem": null,
