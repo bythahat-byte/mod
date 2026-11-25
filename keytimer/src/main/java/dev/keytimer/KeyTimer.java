@@ -150,6 +150,13 @@ public final class KeyTimer implements ClientModInitializer {
 		int leaveBelow = 1;
 		/** Named saves, e.g. "1" or "cowfarm". */
 		java.util.Map<String, Saved> saves = new java.util.TreeMap<>();
+		/** Auto-rejoin after a timeout (and 30 min after Safe Logout) while a route runs. */
+		boolean rejoin = true;
+		String rejoinServer = "mc.mvndicraft.net";
+		/** Lobby: hotbar slot (1-9) with the server selector, and the menu slot to click (0 = top-left). */
+		int lobbyHotbarSlot = 5;
+		int lobbyMenuSlot = 11;
+		int safeLogoutWaitMinutes = 30;
 	}
 
 	private static List<Step> copySteps(List<Step> steps) {
@@ -226,6 +233,7 @@ public final class KeyTimer implements ClientModInitializer {
 				"key.keytimer.toggle", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
 
 		ClientTickEvents.END_CLIENT_TICK.register(KeyTimer::tick);
+		ClientTickEvents.END_CLIENT_TICK.register(Rejoin::tick);
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(literal("keytimer")
 				.executes(ctx -> list(ctx.getSource()))
 				.then(literal("add").then(argument("key", StringArgumentType.string())
@@ -445,16 +453,43 @@ public final class KeyTimer implements ClientModInitializer {
 					return 1;
 				})))
 				.then(literal("stop").executes(ctx -> {
+					Rejoin.cancel();
 					stop(ctx.getSource()::sendFeedback);
 					return 1;
-				}))));
+				}))
+				.then(literal("rejoin")
+						.executes(ctx -> Rejoin.status(ctx.getSource()::sendFeedback))
+						.then(literal("on").executes(ctx -> { config.rejoin = true; save(); return Rejoin.status(ctx.getSource()::sendFeedback); }))
+						.then(literal("off").executes(ctx -> { config.rejoin = false; Rejoin.cancel(); save(); return Rejoin.status(ctx.getSource()::sendFeedback); }))
+						.then(literal("cancel").executes(ctx -> { Rejoin.cancel(); return Rejoin.status(ctx.getSource()::sendFeedback); }))
+						.then(literal("server").then(argument("address", StringArgumentType.word()).executes(ctx -> {
+							config.rejoinServer = StringArgumentType.getString(ctx, "address");
+							save();
+							return Rejoin.status(ctx.getSource()::sendFeedback);
+						})))
+						.then(literal("hotbar").then(argument("slot", IntegerArgumentType.integer(1, 9)).executes(ctx -> {
+							config.lobbyHotbarSlot = IntegerArgumentType.getInteger(ctx, "slot");
+							save();
+							return Rejoin.status(ctx.getSource()::sendFeedback);
+						})))
+						.then(literal("menuslot").then(argument("slot", IntegerArgumentType.integer(0, 89)).executes(ctx -> {
+							config.lobbyMenuSlot = IntegerArgumentType.getInteger(ctx, "slot");
+							save();
+							return Rejoin.status(ctx.getSource()::sendFeedback);
+						})))
+						.then(literal("wait").then(argument("minutes", IntegerArgumentType.integer(1, 600)).executes(ctx -> {
+							config.safeLogoutWaitMinutes = IntegerArgumentType.getInteger(ctx, "minutes");
+							save();
+							return Rejoin.status(ctx.getSource()::sendFeedback);
+						}))))));
 	}
 
 	// ---------------------------------------------------------------- running
 
 	private static void tick(MinecraftClient client) {
 		while (startStopKey.wasPressed()) {
-			if (running) {
+			if (running || Rejoin.isActive()) {
+				Rejoin.cancel();
 				stop(KeyTimer::actionBar);
 			} else {
 				start(KeyTimer::actionBar);
@@ -468,7 +503,7 @@ public final class KeyTimer implements ClientModInitializer {
 			return;
 		}
 		if (client.player == null) {
-			stop(null); // left the world
+			Rejoin.onLostWorld(client); // timeout -> suspend and rejoin; otherwise stop
 			return;
 		}
 		long now = System.nanoTime();
@@ -571,6 +606,7 @@ public final class KeyTimer implements ClientModInitializer {
 			stepIndex = 0;
 		}
 		Step step = config.steps.get(stepIndex);
+		currentStep = stepIndex;
 		if ("look".equals(step.action)) {
 			stepIndex++;
 			if (step.lookYaw != null) {
@@ -1167,6 +1203,73 @@ public final class KeyTimer implements ClientModInitializer {
 		return true;
 	}
 
+	// ---------------------------------------------------------------- auto-rejoin support (see Rejoin)
+
+	/** Index of the step that is currently running (resumed from after a rejoin). */
+	private static int currentStep;
+	private static boolean suspendedClicking, suspendedFlicking;
+	private static int suspendedIndex = -1;
+
+	static Config config() {
+		return config;
+	}
+
+	static boolean isRunning() {
+		return running;
+	}
+
+	/** Lets go of everything but keeps the route and the step it was on, to resume after rejoining. */
+	static void suspend() {
+		suspendedIndex = currentStep;
+		suspendedClicking = clicking;
+		suspendedFlicking = flicking;
+		stop(null);
+	}
+
+	static boolean isSuspended() {
+		return suspendedIndex >= 0;
+	}
+
+	static void cancelSuspend() {
+		suspendedIndex = -1;
+	}
+
+	/** Carries on from the step that was running when the connection dropped. */
+	static void resume() {
+		if (suspendedIndex < 0 || config.steps.isEmpty()) {
+			return;
+		}
+		int index = Math.min(suspendedIndex, config.steps.size() - 1);
+		suspendedIndex = -1;
+		running = true;
+		stepIndex = index;
+		nextStepAt = 0;
+		clicking = suspendedClicking;
+		flicking = suspendedFlicking;
+		actionBar(Text.literal("Key Timer resumed at step " + (index + 1)).formatted(Formatting.GREEN));
+	}
+
+	static void stopForGood() {
+		suspendedIndex = -1;
+		stop(null);
+	}
+
+	/** Called by Safe Logout (if installed) just before it disconnects you. */
+	public static void onSafeLogout() {
+		Rejoin.onSafeLogout();
+	}
+
+	static void logInfo(String message) {
+		org.slf4j.LoggerFactory.getLogger("keytimer").info(message);
+	}
+
+	static void say(Text text) {
+		MinecraftClient client = MinecraftClient.getInstance();
+		if (client.player != null) {
+			client.player.sendMessage(text, false);
+		}
+	}
+
 	private static void stop(java.util.function.Consumer<Text> feedback) {
 		boolean was = running;
 		running = false;
@@ -1650,7 +1753,7 @@ public final class KeyTimer implements ClientModInitializer {
 		}
 	}
 
-	private static void save() {
+	static void save() {
 		try {
 			Files.createDirectories(configFile.getParent());
 			try (Writer writer = Files.newBufferedWriter(configFile)) {

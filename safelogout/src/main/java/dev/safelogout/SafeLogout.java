@@ -255,8 +255,18 @@ public final class SafeLogout implements ClientModInitializer {
 		return d == Math.floor(d) ? String.valueOf((long) d) : String.valueOf(d);
 	}
 
+	/** Used by Key Timer's auto-rejoin: is anyone on the list in the Tab list right now? */
+	public static boolean anyListedOnline() {
+		return !onlineEnemies(MinecraftClient.getInstance()).isEmpty();
+	}
+
 	private static void leave(ClientPlayNetworkHandler handler, String name) {
 		leaving = true;
+		try {
+			// lets Key Timer keep its place and come back later (if Key Timer is installed and running)
+			Class.forName("dev.keytimer.KeyTimer").getMethod("onSafeLogout").invoke(null);
+		} catch (Throwable ignored) {
+		}
 		SafeLogoutLog.info("Leaving because " + name + " came online");
 		handler.getConnection().disconnect(Text.literal("Safe Logout: " + name + " came online, so you left the server."));
 	}

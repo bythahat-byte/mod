@@ -3,7 +3,7 @@
 	"minVersion": "0.8",
 	"package": "dev.keytimer.mixin",
 	"compatibilityLevel": "JAVA_21",
-	"client": ["ClientPlayerInteractionManagerMixin"],
+	"client": ["ClientPlayerInteractionManagerMixin", "DisconnectedScreenAccessor"],
 	"injectors": {
 		"defaultRequire": 1
 	}
