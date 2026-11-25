@@ -2235,7 +2235,8 @@
           "waitSeconds": 0.3,
           "blocks": 0,
           "gotoAxis": "x",
-          "gotoCoord": 114143.5
+          "gotoCoord": 114143.5,
+          "gotoSpeed": 2.9
         },
         {
           "key": "s",
@@ -2251,7 +2252,8 @@
           "waitSeconds": 0,
           "blocks": 0,
           "gotoAxis": "x",
-          "gotoCoord": 113682.3
+          "gotoCoord": 113682.3,
+          "gotoSpeed": 2.9
         },
         {
           "key": null,
@@ -2362,7 +2364,8 @@
           "waitSeconds": 0.3,
           "blocks": 0,
           "gotoAxis": "x",
-          "gotoCoord": 114142.6
+          "gotoCoord": 114142.6,
+          "gotoSpeed": 2.9
         },
         {
           "key": "s",
@@ -2388,7 +2391,8 @@
           "waitSeconds": 0.3,
           "blocks": 0,
           "gotoAxis": "x",
-          "gotoCoord": 113681.5
+          "gotoCoord": 113681.5,
+          "gotoSpeed": 2.9
         },
         {
           "key": null,
