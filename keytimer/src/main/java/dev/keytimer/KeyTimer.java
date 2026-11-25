@@ -69,6 +69,8 @@ public final class KeyTimer implements ClientModInitializer {
 		Float flickMin;
 		Float flickMax;
 		Double flickEvery;
+		/** Fast flick: how many angles it sweeps through (2 = just the two ends; default 3). */
+		Integer flickSteps;
 		/** clicker: keep clicking "left" or "right" this many times a second (0 = stop). */
 		String clickButton;
 		Double clickCps;
@@ -124,6 +126,7 @@ public final class KeyTimer implements ClientModInitializer {
 			step.flickMin = flickMin;
 			step.flickMax = flickMax;
 			step.flickEvery = flickEvery;
+			step.flickSteps = flickSteps;
 			step.clickButton = clickButton;
 			step.clickCps = clickCps;
 			return step;
@@ -193,6 +196,7 @@ public final class KeyTimer implements ClientModInitializer {
 	private static double flickEverySeconds;
 	private static long nextFlickAt;
 	private static int flickPhase;
+	private static int flickPoints = 3;
 	private static final java.util.Random RANDOM = new java.util.Random();
 	/** Auto clicker: while on, presses the attack/use key clickRate times a second. */
 	private static boolean clicking;
@@ -476,11 +480,13 @@ public final class KeyTimer implements ClientModInitializer {
 		if (flicking && client.currentScreen == null) {
 			if (now >= nextFlickAt - 5_000_000L) {
 				if (flickEverySeconds <= 0.1) {
-					// fast: sweep up and down through the whole range in 4 steps (40, 42.7, 45.3, 48, 45.3, ...),
-					// so the angles in the middle get clicked too, not just the two ends
-					int k = flickPhase < 4 ? flickPhase : 6 - flickPhase;
-					flickTarget = flickLow + (flickHigh - flickLow) * k / 3f;
-					flickPhase = (flickPhase + 1) % 6;
+					// fast: sweep up and down through flickPoints evenly spaced angles, one per tick
+					// (3 points: 40, 44, 48, 44, ...), so the middle angles get clicked too
+					int last = flickPoints - 1;
+					int cycle = 2 * last;
+					int k = flickPhase <= last ? flickPhase : cycle - flickPhase;
+					flickTarget = flickLow + (flickHigh - flickLow) * k / (float) last;
+					flickPhase = (flickPhase + 1) % cycle;
 					nextFlickAt = now + (long) (flickEverySeconds * 1_000_000_000L);
 				} else {
 					flickTarget = flickLow + RANDOM.nextFloat() * (flickHigh - flickLow);
@@ -631,6 +637,8 @@ public final class KeyTimer implements ClientModInitializer {
 				flickLow = Math.min(step.flickMin, step.flickMax);
 				flickHigh = Math.max(step.flickMin, step.flickMax);
 				flickEverySeconds = step.flickEvery;
+				flickPoints = step.flickSteps != null ? Math.max(2, Math.min(8, step.flickSteps)) : 3;
+				flickPhase = 0;
 				flickTarget = client.player.getPitch();
 				nextFlickAt = now;
 			}
@@ -1258,7 +1266,7 @@ public final class KeyTimer implements ClientModInitializer {
 					: "clicker".equals(s.action) ? (s.clickCps == null || s.clickCps <= 0 ? "stop clicking"
 							: "keep " + s.clickButton + " clicking " + trim(s.clickCps) + " times a second")
 					: "flick".equals(s.action) ? (s.flickEvery == null || s.flickEvery <= 0 ? "stop the head flick"
-							: "head flick between " + s.flickMin + " and " + s.flickMax + " pitch, about every " + trim(s.flickEvery) + "s")
+							: "head flick between " + s.flickMin + " and " + s.flickMax + " pitch, about every " + trim(s.flickEvery) + "s" + (s.flickSteps != null ? ", " + s.flickSteps + " angles" : ""))
 					: "deposit".equals(s.action) ? "put all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " into the chest you're looking at"
 					: "chest".equals(s.action) ? "take " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the chest you're looking at (up to " + (s.stacks > 0 ? s.stacks : 9) + " stacks)"
 					: "stash".equals(s.action) ? "move " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the hotbar into the inventory"
@@ -1446,13 +1454,18 @@ public final class KeyTimer implements ClientModInitializer {
 				.then(argument("minPitch", com.mojang.brigadier.arguments.FloatArgumentType.floatArg(-90, 90))
 						.then(argument("maxPitch", com.mojang.brigadier.arguments.FloatArgumentType.floatArg(-90, 90))
 								.then(argument("everySeconds", DoubleArgumentType.doubleArg(0.05, 600))
-										.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
-											Step step = Step.inventory("flick", null, DoubleArgumentType.getDouble(ctx, "waitSeconds"));
-											step.flickMin = com.mojang.brigadier.arguments.FloatArgumentType.getFloat(ctx, "minPitch");
-											step.flickMax = com.mojang.brigadier.arguments.FloatArgumentType.getFloat(ctx, "maxPitch");
-											step.flickEvery = DoubleArgumentType.getDouble(ctx, "everySeconds");
-											return action.run(ctx, step);
-										})))));
+										.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> flickStep(ctx, action, null))
+												.then(argument("angles", IntegerArgumentType.integer(2, 8)).executes(ctx ->
+														flickStep(ctx, action, IntegerArgumentType.getInteger(ctx, "angles"))))))));
+	}
+
+	private static int flickStep(com.mojang.brigadier.context.CommandContext<FabricClientCommandSource> ctx, StepAction action, Integer angles) {
+		Step step = Step.inventory("flick", null, DoubleArgumentType.getDouble(ctx, "waitSeconds"));
+		step.flickMin = com.mojang.brigadier.arguments.FloatArgumentType.getFloat(ctx, "minPitch");
+		step.flickMax = com.mojang.brigadier.arguments.FloatArgumentType.getFloat(ctx, "maxPitch");
+		step.flickEvery = DoubleArgumentType.getDouble(ctx, "everySeconds");
+		step.flickSteps = angles;
+		return action.run(ctx, step);
 	}
 
 	/** "chest named <name> <wait> [stacks]": open the chest you're looking at and take that item until you carry that many stacks. */
@@ -1568,7 +1581,7 @@ public final class KeyTimer implements ClientModInitializer {
 					: "clicker".equals(s.action) ? (s.clickCps == null || s.clickCps <= 0 ? "stop clicking"
 							: "keep " + s.clickButton + " clicking " + trim(s.clickCps) + " times a second")
 					: "flick".equals(s.action) ? (s.flickEvery == null || s.flickEvery <= 0 ? "stop the head flick"
-							: "head flick between " + s.flickMin + " and " + s.flickMax + " pitch, about every " + trim(s.flickEvery) + "s")
+							: "head flick between " + s.flickMin + " and " + s.flickMax + " pitch, about every " + trim(s.flickEvery) + "s" + (s.flickSteps != null ? ", " + s.flickSteps + " angles" : ""))
 					: "deposit".equals(s.action) ? "put all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " into the chest you're looking at"
 					: "chest".equals(s.action) ? "take " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the chest you're looking at (up to " + (s.stacks > 0 ? s.stacks : 9) + " stacks)"
 					: "stash".equals(s.action) ? "move " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the hotbar into the inventory"
@@ -1611,7 +1624,7 @@ public final class KeyTimer implements ClientModInitializer {
 				&& a.blocks == b.blocks && java.util.Objects.equals(a.action, b.action) && java.util.Objects.equals(a.item, b.item) && a.stacks == b.stacks && a.wheatBelow == b.wheatBelow
 				&& java.util.Objects.equals(a.lookYaw, b.lookYaw) && java.util.Objects.equals(a.lookPitch, b.lookPitch)
 				&& java.util.Objects.equals(a.gotoAxis, b.gotoAxis) && java.util.Objects.equals(a.gotoCoord, b.gotoCoord) && java.util.Objects.equals(a.gotoSpeed, b.gotoSpeed)
-				&& java.util.Objects.equals(a.flickMin, b.flickMin) && java.util.Objects.equals(a.flickMax, b.flickMax) && java.util.Objects.equals(a.flickEvery, b.flickEvery)
+				&& java.util.Objects.equals(a.flickMin, b.flickMin) && java.util.Objects.equals(a.flickMax, b.flickMax) && java.util.Objects.equals(a.flickEvery, b.flickEvery) && java.util.Objects.equals(a.flickSteps, b.flickSteps)
 				&& java.util.Objects.equals(a.clickButton, b.clickButton) && java.util.Objects.equals(a.clickCps, b.clickCps);
 	}
 
