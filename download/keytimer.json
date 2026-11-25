@@ -93,17 +93,13 @@
       "blocks": 0,
       "action": "look",
       "lookYaw": -180,
-      "lookPitch": 44
+      "lookPitch": 49
     },
     {
-      "key": null,
-      "holdSeconds": 0,
+      "key": "u",
+      "holdSeconds": 0.15,
       "waitSeconds": 0,
-      "blocks": 0,
-      "action": "flick",
-      "flickMin": 40,
-      "flickMax": 48,
-      "flickEvery": 0.05
+      "blocks": 0
     },
     {
       "key": null,
@@ -120,7 +116,8 @@
       "waitSeconds": 0.3,
       "blocks": 0,
       "gotoAxis": "x",
-      "gotoCoord": 114143.5
+      "gotoCoord": 114143.5,
+      "gotoSpeed": 2.9
     },
     {
       "key": "s",
@@ -136,7 +133,8 @@
       "waitSeconds": 0,
       "blocks": 0,
       "gotoAxis": "x",
-      "gotoCoord": 113682.3
+      "gotoCoord": 113682.3,
+      "gotoSpeed": 2.9
     },
     {
       "key": null,
@@ -148,14 +146,10 @@
       "clickCps": 0.0
     },
     {
-      "key": null,
-      "holdSeconds": 0,
+      "key": "u",
+      "holdSeconds": 0.15,
       "waitSeconds": 0,
-      "blocks": 0,
-      "action": "flick",
-      "flickMin": 0,
-      "flickMax": 0,
-      "flickEvery": 0
+      "blocks": 0
     },
     {
       "key": "a",
@@ -251,7 +245,8 @@
       "waitSeconds": 0.3,
       "blocks": 0,
       "gotoAxis": "x",
-      "gotoCoord": 114142.6
+      "gotoCoord": 114142.6,
+      "gotoSpeed": 2.9
     },
     {
       "key": "s",
@@ -277,7 +272,8 @@
       "waitSeconds": 0.3,
       "blocks": 0,
       "gotoAxis": "x",
-      "gotoCoord": 113681.5
+      "gotoCoord": 113681.5,
+      "gotoSpeed": 2.9
     },
     {
       "key": null,
@@ -342,6 +338,15 @@
       "lookPitch": 9.7
     },
     {
+      "key": null,
+      "holdSeconds": 0,
+      "waitSeconds": 0,
+      "blocks": 0,
+      "action": "clicker",
+      "clickButton": "right",
+      "clickCps": 20.0
+    },
+    {
       "key": "w+a",
       "holdSeconds": 0,
       "waitSeconds": 0.3,
@@ -370,10 +375,20 @@
       "wheatBelow": 0
     },
     {
-      "key": "s+d",
-      "holdSeconds": 0.25,
-      "waitSeconds": 0.2,
-      "blocks": 0
+      "key": "d",
+      "holdSeconds": 0,
+      "waitSeconds": 0.1,
+      "blocks": 0,
+      "gotoAxis": "z",
+      "gotoCoord": 26074.9
+    },
+    {
+      "key": "w",
+      "holdSeconds": 0,
+      "waitSeconds": 0.1,
+      "blocks": 0,
+      "gotoAxis": "x",
+      "gotoCoord": 113913.6
     },
     {
       "key": "w+a",
@@ -393,7 +408,44 @@
       "lookPitch": 17.5
     },
     {
-      "key": "s",
+      "key": null,
+      "holdSeconds": 0,
+      "waitSeconds": 0.3,
+      "blocks": 0,
+      "action": "drop",
+      "item": "name:Cow Curds",
+      "stacks": 0,
+      "wheatBelow": 0
+    },
+    {
+      "key": null,
+      "holdSeconds": 0,
+      "waitSeconds": 0.3,
+      "blocks": 0,
+      "action": "drop",
+      "item": "name:Sheep Curds",
+      "stacks": 0,
+      "wheatBelow": 0
+    },
+    {
+      "key": null,
+      "holdSeconds": 0,
+      "waitSeconds": 0.2,
+      "blocks": 0,
+      "action": "look",
+      "lookYaw": -114,
+      "lookPitch": 17.5
+    },
+    {
+      "key": "w",
+      "holdSeconds": 0,
+      "waitSeconds": 0.1,
+      "blocks": 0,
+      "gotoAxis": "x",
+      "gotoCoord": 114142.7
+    },
+    {
+      "key": "d",
       "holdSeconds": 0,
       "waitSeconds": 0.3,
       "blocks": 0,
@@ -408,6 +460,14 @@
       "action": "look",
       "lookYaw": 114,
       "lookPitch": 17.5
+    },
+    {
+      "key": "w+a",
+      "holdSeconds": 0,
+      "waitSeconds": 0.1,
+      "blocks": 0,
+      "gotoAxis": "x",
+      "gotoCoord": 114141.3
     },
     {
       "key": "w+d",
@@ -438,10 +498,20 @@
       "wheatBelow": 0
     },
     {
-      "key": "a+s",
-      "holdSeconds": 0.25,
-      "waitSeconds": 0.2,
-      "blocks": 0
+      "key": "a",
+      "holdSeconds": 0,
+      "waitSeconds": 0.1,
+      "blocks": 0,
+      "gotoAxis": "z",
+      "gotoCoord": 26080.9
+    },
+    {
+      "key": "w",
+      "holdSeconds": 0,
+      "waitSeconds": 0.1,
+      "blocks": 0,
+      "gotoAxis": "x",
+      "gotoCoord": 113911.4
     },
     {
       "key": "w+d",
@@ -450,6 +520,15 @@
       "blocks": 0,
       "gotoAxis": "x",
       "gotoCoord": 113681.3
+    },
+    {
+      "key": null,
+      "holdSeconds": 0,
+      "waitSeconds": 0,
+      "blocks": 0,
+      "action": "clicker",
+      "clickButton": null,
+      "clickCps": 0.0
     },
     {
       "key": null,
