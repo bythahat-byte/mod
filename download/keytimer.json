@@ -166,14 +166,6 @@
       "blocks": 0
     },
     {
-      "key": "d",
-      "holdSeconds": 0,
-      "waitSeconds": 0.1,
-      "blocks": 0,
-      "gotoAxis": "x",
-      "gotoCoord": 113681.65
-    },
-    {
       "key": "w",
       "holdSeconds": 0,
       "waitSeconds": 0.3,
@@ -283,14 +275,6 @@
       "action": "clicker",
       "clickButton": null,
       "clickCps": 0.0
-    },
-    {
-      "key": "d",
-      "holdSeconds": 0,
-      "waitSeconds": 0.1,
-      "blocks": 0,
-      "gotoAxis": "x",
-      "gotoCoord": 113681.65
     },
     {
       "key": "w",
@@ -549,14 +533,6 @@
       "lookPitch": 0
     },
     {
-      "key": "d",
-      "holdSeconds": 0,
-      "waitSeconds": 0.1,
-      "blocks": 0,
-      "gotoAxis": "x",
-      "gotoCoord": 113681.65
-    },
-    {
       "key": "w",
       "holdSeconds": 0,
       "waitSeconds": 0.2,
@@ -607,14 +583,6 @@
       "holdSeconds": 3,
       "waitSeconds": 0.5,
       "blocks": 0
-    },
-    {
-      "key": "d",
-      "holdSeconds": 0,
-      "waitSeconds": 0.3,
-      "blocks": 0,
-      "gotoAxis": "x",
-      "gotoCoord": 113681.65
     }
   ],
   "loop": true,
@@ -2373,14 +2341,6 @@
           "blocks": 0
         },
         {
-          "key": "d",
-          "holdSeconds": 0,
-          "waitSeconds": 0.1,
-          "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 113681.65
-        },
-        {
           "key": "w",
           "holdSeconds": 0,
           "waitSeconds": 0.3,
@@ -2490,14 +2450,6 @@
           "action": "clicker",
           "clickButton": null,
           "clickCps": 0.0
-        },
-        {
-          "key": "d",
-          "holdSeconds": 0,
-          "waitSeconds": 0.1,
-          "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 113681.65
         },
         {
           "key": "w",
@@ -2756,14 +2708,6 @@
           "lookPitch": 0
         },
         {
-          "key": "d",
-          "holdSeconds": 0,
-          "waitSeconds": 0.1,
-          "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 113681.65
-        },
-        {
           "key": "w",
           "holdSeconds": 0,
           "waitSeconds": 0.2,
@@ -2814,14 +2758,6 @@
           "holdSeconds": 3,
           "waitSeconds": 0.5,
           "blocks": 0
-        },
-        {
-          "key": "d",
-          "holdSeconds": 0,
-          "waitSeconds": 0.3,
-          "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 113681.65
         }
       ],
       "loop": true,
@@ -2996,14 +2932,6 @@
           "blocks": 0
         },
         {
-          "key": "d",
-          "holdSeconds": 0,
-          "waitSeconds": 0.1,
-          "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 113681.65
-        },
-        {
           "key": "w",
           "holdSeconds": 0,
           "waitSeconds": 0.3,
@@ -3113,14 +3041,6 @@
           "action": "clicker",
           "clickButton": null,
           "clickCps": 0.0
-        },
-        {
-          "key": "d",
-          "holdSeconds": 0,
-          "waitSeconds": 0.1,
-          "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 113681.65
         },
         {
           "key": "w",
@@ -3379,14 +3299,6 @@
           "lookPitch": 0
         },
         {
-          "key": "d",
-          "holdSeconds": 0,
-          "waitSeconds": 0.1,
-          "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 113681.65
-        },
-        {
           "key": "w",
           "holdSeconds": 0,
           "waitSeconds": 0.2,
@@ -3437,14 +3349,6 @@
           "holdSeconds": 3,
           "waitSeconds": 0.5,
           "blocks": 0
-        },
-        {
-          "key": "d",
-          "holdSeconds": 0,
-          "waitSeconds": 0.3,
-          "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 113681.65
         }
       ],
       "loop": true,
