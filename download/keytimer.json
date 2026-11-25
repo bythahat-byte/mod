@@ -630,6 +630,14 @@
       "lookPitch": 0
     },
     {
+      "key": "s",
+      "holdSeconds": 0,
+      "waitSeconds": 0.2,
+      "blocks": 0,
+      "gotoAxis": "z",
+      "gotoCoord": 26062.5
+    },
+    {
       "key": "w+space",
       "holdSeconds": 3,
       "waitSeconds": 0.5,
@@ -3519,6 +3527,14 @@
           "action": "look",
           "lookYaw": -180,
           "lookPitch": 0
+        },
+        {
+          "key": "s",
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "gotoAxis": "z",
+          "gotoCoord": 26062.5
         },
         {
           "key": "w+space",
