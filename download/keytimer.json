@@ -2499,9 +2499,19 @@
         },
         {
           "key": "s+d",
-          "holdSeconds": 0.25,
-          "waitSeconds": 0.2,
-          "blocks": 0
+          "holdSeconds": 0,
+          "waitSeconds": 0.1,
+          "blocks": 0,
+          "gotoAxis": "z",
+          "gotoCoord": 26074.9
+        },
+        {
+          "key": "w",
+          "holdSeconds": 0,
+          "waitSeconds": 0.1,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 113913.6
         },
         {
           "key": "w+a",
@@ -2567,9 +2577,19 @@
         },
         {
           "key": "a+s",
-          "holdSeconds": 0.25,
-          "waitSeconds": 0.2,
-          "blocks": 0
+          "holdSeconds": 0,
+          "waitSeconds": 0.1,
+          "blocks": 0,
+          "gotoAxis": "z",
+          "gotoCoord": 26080.9
+        },
+        {
+          "key": "w",
+          "holdSeconds": 0,
+          "waitSeconds": 0.1,
+          "blocks": 0,
+          "gotoAxis": "x",
+          "gotoCoord": 113911.4
         },
         {
           "key": "w+d",
