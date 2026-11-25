@@ -220,6 +220,9 @@ public final class KeyTimer implements ClientModInitializer {
 	private static long progressAt;
 	/** Speed limit for the current goto step in blocks per tick (0 = none). */
 	private static double gotoMaxPerTick;
+	/** Speed cap by distance: where the goto started and when, so the average speed can't exceed the cap. */
+	private static double gotoStartPos;
+	private static long gotoStartAt;
 	private static long moveDeadline;
 	private static long moveWaitNanos;
 
@@ -586,8 +589,17 @@ public final class KeyTimer implements ClientModInitializer {
 			}
 			// keep going while one more tick (moving about vel / 0.546) gets the stop closer to the target
 			if (error > vel / 0.546 / 2 && now < moveDeadline && !stuck) {
-				// speed limit: let go for a tick whenever we're going faster than allowed
-				press(holdingKey, !(gotoMode && gotoMaxPerTick > 0 && vel > gotoMaxPerTick));
+				// speed limit: let go whenever we're further along than the capped speed allows
+				boolean ahead = false;
+				if (gotoMode && gotoMaxPerTick > 0) {
+					double allowed = gotoMaxPerTick * 20 * (now - gotoStartAt) / 1e9 + 0.3; // small head start to get moving
+					double travelled = (pos - gotoStartPos) * moveSign;
+					ahead = travelled > allowed;
+					if (ahead) {
+						progressAt = now; // waiting on purpose is not being stuck
+					}
+				}
+				press(holdingKey, !ahead);
 				return;
 			}
 			press(holdingKey, false);
@@ -1104,6 +1116,8 @@ public final class KeyTimer implements ClientModInitializer {
 		moveSign = moveTarget >= pos ? 1 : -1;
 		gotoMode = true;
 		gotoMaxPerTick = step.gotoSpeed != null && step.gotoSpeed > 0 ? step.gotoSpeed / 20.0 : 0;
+		gotoStartPos = pos;
+		gotoStartAt = now;
 		progressPos = pos;
 		progressAt = now;
 		// generous: even walking slowly along a wall (about 1.5 blocks/second) gets there in time
