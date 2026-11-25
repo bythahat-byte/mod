@@ -14,13 +14,8 @@ jobs:
       - run: |
           jar=$(find ~/.gradle/caches $PWD/.gradle -name 'minecraft-*1.21.11*sources.jar' | head -1)
           mkdir -p src && cd src && unzip -q -o "$jar"
-          echo "=== ConnectScreen"; grep -n -E "public static void connect|private void connect|ConnectScreen\(" net/minecraft/client/gui/screen/multiplayer/ConnectScreen.java
-          echo "=== ServerInfo"; grep -n -E "public ServerInfo\(|enum ServerType|LAN|OTHER|REALM" net/minecraft/client/network/ServerInfo.java | head
-          echo "=== ServerAddress"; grep -n -E "public static" net/minecraft/client/network/ServerAddress.java
-          echo "=== onDisconnected"; grep -n -E "onDisconnected|DisconnectionInfo" net/minecraft/client/network/ClientCommonNetworkHandler.java | head
-          echo "=== DisconnectionInfo"; find . -name 'DisconnectionInfo.java' | head -2; cat $(find . -name 'DisconnectionInfo.java' | head -1) | head -30
-          echo "=== DisconnectedScreen"; grep -n -E "private final|public DisconnectedScreen\(" net/minecraft/client/gui/screen/DisconnectedScreen.java
-          echo "=== MinecraftClient disconnect"; grep -n -E "public void disconnect|public ServerInfo getCurrentServerEntry|public void setScreen" net/minecraft/client/MinecraftClient.java
-          echo "=== TitleScreen ctor"; grep -n "public TitleScreen(" net/minecraft/client/gui/screen/TitleScreen.java
-          echo "=== timeout keys"; grep -rn "disconnect.timeout\|disconnect.genericReason\|disconnect.endOfStream" net/minecraft | head -8
+          sed -n 60,110p net/minecraft/client/gui/screen/multiplayer/ConnectScreen.java
+          echo "=== onDisconnected body"; sed -n 355,380p net/minecraft/client/network/ClientCommonNetworkHandler.java
+          echo "=== HandledScreen slot click"; grep -n "protected void onMouseClick\|public void onMouseClick" net/minecraft/client/gui/screen/ingame/HandledScreen.java
+          echo "=== getSelectedSlot"; grep -n "public int getSelectedSlot\|public void setSelectedSlot" net/minecraft/entity/player/PlayerInventory.java
           echo "=== END"
