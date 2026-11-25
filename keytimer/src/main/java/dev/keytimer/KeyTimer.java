@@ -491,10 +491,18 @@ public final class KeyTimer implements ClientModInitializer {
 		}
 		if (clicking && client.currentScreen == null) {
 			clickAccum += clickRate / 20.0;
+			if (clickUse && client.player.isUsingItem()) {
+				// e.g. started drinking a milk bucket: cancel it so the next click works straight away
+				client.interactionManager.stopUsingItem(client.player);
+			}
+			// only click when looking at a block or an animal: a click on air would drink milk / eat / throw
+			boolean target = client.crosshairTarget != null && client.crosshairTarget.getType() != net.minecraft.util.hit.HitResult.Type.MISS;
 			KeyBinding binding = clickUse ? client.options.useKey : client.options.attackKey;
 			InputUtil.Key key = InputUtil.fromTranslationKey(binding.getBoundKeyTranslationKey());
 			while (clickAccum >= 1) {
-				KeyBinding.onKeyPressed(key); // one click, handled next tick like a real one
+				if (target) {
+					KeyBinding.onKeyPressed(key); // one click, handled next tick like a real one
+				}
 				clickAccum -= 1;
 			}
 		}

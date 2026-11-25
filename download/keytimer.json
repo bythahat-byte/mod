@@ -2239,8 +2239,7 @@
           "waitSeconds": 0.3,
           "blocks": 0,
           "gotoAxis": "x",
-          "gotoCoord": 114143.5,
-          "gotoSpeed": 2.0
+          "gotoCoord": 114143.5
         },
         {
           "key": "s",
@@ -2256,8 +2255,7 @@
           "waitSeconds": 0,
           "blocks": 0,
           "gotoAxis": "x",
-          "gotoCoord": 113682.3,
-          "gotoSpeed": 2.0
+          "gotoCoord": 113682.3
         },
         {
           "key": null,
