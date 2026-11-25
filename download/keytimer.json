@@ -2212,17 +2212,13 @@
           "blocks": 0,
           "action": "look",
           "lookYaw": -180,
-          "lookPitch": 44
+          "lookPitch": 47
         },
         {
-          "key": null,
+          "key": "u",
           "holdSeconds": 0,
           "waitSeconds": 0,
-          "blocks": 0,
-          "action": "flick",
-          "flickMin": 40,
-          "flickMax": 48,
-          "flickEvery": 0.05
+          "blocks": 0
         },
         {
           "key": null,
@@ -2267,14 +2263,10 @@
           "clickCps": 0.0
         },
         {
-          "key": null,
+          "key": "u",
           "holdSeconds": 0,
           "waitSeconds": 0,
-          "blocks": 0,
-          "action": "flick",
-          "flickMin": 0,
-          "flickMax": 0,
-          "flickEvery": 0
+          "blocks": 0
         },
         {
           "key": "a",
