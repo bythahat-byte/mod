@@ -1,0 +1,26 @@
+name: probe
+on: [push]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - run: chmod +x gradlew && ./gradlew genSources -q 2>&1 | tail -5
+      - run: |
+          jar=$(find ~/.gradle/caches $PWD/.gradle -name 'minecraft-*1.21.11*sources.jar' | head -1)
+          mkdir -p src && cd src && unzip -q -o "$jar"
+          echo "=== ConnectScreen"; grep -n -E "public static void connect|private void connect|ConnectScreen\(" net/minecraft/client/gui/screen/multiplayer/ConnectScreen.java
+          echo "=== ServerInfo"; grep -n -E "public ServerInfo\(|enum ServerType|LAN|OTHER|REALM" net/minecraft/client/network/ServerInfo.java | head
+          echo "=== ServerAddress"; grep -n -E "public static" net/minecraft/client/network/ServerAddress.java
+          echo "=== onDisconnected"; grep -n -E "onDisconnected|DisconnectionInfo" net/minecraft/client/network/ClientCommonNetworkHandler.java | head
+          echo "=== DisconnectionInfo"; find . -name 'DisconnectionInfo.java' | head -2; cat $(find . -name 'DisconnectionInfo.java' | head -1) | head -30
+          echo "=== DisconnectedScreen"; grep -n -E "private final|public DisconnectedScreen\(" net/minecraft/client/gui/screen/DisconnectedScreen.java
+          echo "=== MinecraftClient disconnect"; grep -n -E "public void disconnect|public ServerInfo getCurrentServerEntry|public void setScreen" net/minecraft/client/MinecraftClient.java
+          echo "=== TitleScreen ctor"; grep -n "public TitleScreen(" net/minecraft/client/gui/screen/TitleScreen.java
+          echo "=== timeout keys"; grep -rn "disconnect.timeout\|disconnect.genericReason\|disconnect.endOfStream" net/minecraft | head -8
+          echo "=== END"
