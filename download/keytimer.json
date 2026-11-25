@@ -2216,7 +2216,7 @@
         },
         {
           "key": "u",
-          "holdSeconds": 0,
+          "holdSeconds": 0.15,
           "waitSeconds": 0,
           "blocks": 0
         },
@@ -2264,7 +2264,7 @@
         },
         {
           "key": "u",
-          "holdSeconds": 0,
+          "holdSeconds": 0.15,
           "waitSeconds": 0,
           "blocks": 0
         },
