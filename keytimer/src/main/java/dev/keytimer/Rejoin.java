@@ -26,12 +26,14 @@ import java.util.function.Consumer;
  * Rejoining goes through the server's lobby: select the selector item, right-click, click the server.
  */
 final class Rejoin {
-	private enum State { IDLE, LOST, WAIT, CONNECTING, LOBBY, MENU, TRANSFER, CHECK }
+	private enum State { IDLE, LOST, WAIT, MANUAL, CONNECTING, LOBBY, MENU, TRANSFER, CHECK }
 
 	private static final long SECOND = 1_000_000_000L;
 
 	private static State state = State.IDLE;
 	private static long at;
+	/** While the player rejoins by hand: when the automatic rejoin would have happened. */
+	private static long savedAt;
 	/** True when this rejoin came from Safe Logout: check the list before resuming. */
 	private static boolean checkPlayers;
 	private static boolean safeLogoutPending;
@@ -99,10 +101,25 @@ final class Rejoin {
 				}
 			}
 			case WAIT -> {
-				if (client.player != null) {
-					giveUp("you joined a server yourself"); // don't fight the player
+				if (client.player != null && client.world != null) {
+					// you rejoined yourself: carry on once you're through the lobby and in the server
+					lobbyWorld = client.world;
+					savedAt = at;
+					state = State.MANUAL;
+					status = "you rejoined; waiting until you're in the server";
+					KeyTimer.say(Text.literal("Key Timer: will carry on from step " + "where it stopped once you're in the server"
+							+ (checkPlayers ? " (if no one on your list is online)" : "")).formatted(Formatting.YELLOW));
 				} else if (now >= at && !(client.currentScreen instanceof ConnectScreen)) {
 					connect(client);
+				}
+			}
+			case MANUAL -> {
+				if (client.player == null || client.world == null) {
+					state = State.WAIT; // left again: go back to waiting for the automatic rejoin
+					at = Math.max(savedAt, now + 10 * SECOND);
+					status = "waiting to rejoin";
+				} else if (client.world != lobbyWorld) {
+					arrived(now);
 				}
 			}
 			case CONNECTING -> {
@@ -240,6 +257,15 @@ final class Rejoin {
 		}
 	}
 
+	/** "/keytimer resume": you're in the right place, carry on now (e.g. joined straight into the server). */
+	static boolean forceResume() {
+		if (state == State.IDLE && !KeyTimer.isSuspended()) {
+			return false;
+		}
+		arrived(System.nanoTime());
+		return true;
+	}
+
 	static int status(Consumer<Text> out) {
 		KeyTimer.Config c = KeyTimer.config();
 		out.accept(Text.literal("Auto-rejoin: " + (c.rejoin ? "on" : "off")).formatted(c.rejoin ? Formatting.GREEN : Formatting.RED));
@@ -250,7 +276,7 @@ final class Rejoin {
 			out.accept(Text.literal("  now: " + status + (state == State.WAIT ? " (" + left / 60 + "m " + left % 60 + "s left)" : ""))
 					.formatted(Formatting.YELLOW));
 		}
-		out.accept(Text.literal("  /keytimer rejoin on|off|cancel|server <address>|hotbar <1-9>|menuslot <n>|wait <minutes>").formatted(Formatting.DARK_GRAY));
+		out.accept(Text.literal("  /keytimer rejoin on|off|cancel|server <address>|hotbar <1-9>|menuslot <n>|wait <minutes>   /keytimer resume").formatted(Formatting.DARK_GRAY));
 		return 1;
 	}
 }

@@ -457,6 +457,14 @@ public final class KeyTimer implements ClientModInitializer {
 					stop(ctx.getSource()::sendFeedback);
 					return 1;
 				}))
+				.then(literal("resume").executes(ctx -> {
+					if (!Rejoin.forceResume()) {
+						ctx.getSource().sendError(Text.literal("Nothing to resume"));
+						return 0;
+					}
+					ctx.getSource().sendFeedback(Text.literal("Carrying on in 5 seconds").formatted(Formatting.GREEN));
+					return 1;
+				}))
 				.then(literal("rejoin")
 						.executes(ctx -> Rejoin.status(ctx.getSource()::sendFeedback))
 						.then(literal("on").executes(ctx -> { config.rejoin = true; save(); return Rejoin.status(ctx.getSource()::sendFeedback); }))
