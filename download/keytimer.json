@@ -536,7 +536,7 @@
       "waitSeconds": 0.5,
       "blocks": 0,
       "gotoAxis": "x",
-      "gotoCoord": 113681.8
+      "gotoCoord": 113683.0
     },
     {
       "key": "a",
@@ -3422,7 +3422,7 @@
           "waitSeconds": 0.5,
           "blocks": 0,
           "gotoAxis": "x",
-          "gotoCoord": 113681.8
+          "gotoCoord": 113683.0
         },
         {
           "key": "a",
