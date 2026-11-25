@@ -2498,7 +2498,7 @@
           "wheatBelow": 0
         },
         {
-          "key": "s+d",
+          "key": "d",
           "holdSeconds": 0,
           "waitSeconds": 0.1,
           "blocks": 0,
@@ -2576,7 +2576,7 @@
           "wheatBelow": 0
         },
         {
-          "key": "a+s",
+          "key": "a",
           "holdSeconds": 0,
           "waitSeconds": 0.1,
           "blocks": 0,
