@@ -102,13 +102,10 @@
       "blocks": 0
     },
     {
-      "key": null,
-      "holdSeconds": 0,
+      "key": "semicolon",
+      "holdSeconds": 0.15,
       "waitSeconds": 0,
-      "blocks": 0,
-      "action": "clicker",
-      "clickButton": "right",
-      "clickCps": 40.0
+      "blocks": 0
     },
     {
       "key": "s+d",
@@ -137,13 +134,10 @@
       "gotoSpeed": 2.9
     },
     {
-      "key": null,
-      "holdSeconds": 0,
+      "key": "semicolon",
+      "holdSeconds": 0.15,
       "waitSeconds": 0,
-      "blocks": 0,
-      "action": "clicker",
-      "clickButton": null,
-      "clickCps": 0.0
+      "blocks": 0
     },
     {
       "key": "u",
@@ -237,13 +231,10 @@
       "lookPitch": 7
     },
     {
-      "key": null,
-      "holdSeconds": 0,
+      "key": "semicolon",
+      "holdSeconds": 0.15,
       "waitSeconds": 0,
-      "blocks": 0,
-      "action": "clicker",
-      "clickButton": "right",
-      "clickCps": 20.0
+      "blocks": 0
     },
     {
       "key": "s+d",
@@ -282,13 +273,10 @@
       "gotoSpeed": 2.9
     },
     {
-      "key": null,
-      "holdSeconds": 0,
+      "key": "semicolon",
+      "holdSeconds": 0.15,
       "waitSeconds": 0,
-      "blocks": 0,
-      "action": "clicker",
-      "clickButton": null,
-      "clickCps": 0.0
+      "blocks": 0
     },
     {
       "key": "w",
@@ -350,13 +338,10 @@
       "lookPitch": 9.7
     },
     {
-      "key": null,
-      "holdSeconds": 0,
+      "key": "semicolon",
+      "holdSeconds": 0.15,
       "waitSeconds": 0,
-      "blocks": 0,
-      "action": "clicker",
-      "clickButton": "right",
-      "clickCps": 20.0
+      "blocks": 0
     },
     {
       "key": "w+a",
@@ -539,12 +524,10 @@
       "gotoCoord": 113681.5
     },
     {
-      "key": null,
-      "holdSeconds": 0,
+      "key": "semicolon",
+      "holdSeconds": 0.15,
       "waitSeconds": 0,
-      "blocks": 0,
-      "action": "clicker",
-      "clickCps": 0.0
+      "blocks": 0
     },
     {
       "key": null,
@@ -2410,13 +2393,10 @@
           "blocks": 0
         },
         {
-          "key": null,
-          "holdSeconds": 0,
+          "key": "semicolon",
+          "holdSeconds": 0.15,
           "waitSeconds": 0,
-          "blocks": 0,
-          "action": "clicker",
-          "clickButton": "right",
-          "clickCps": 40.0
+          "blocks": 0
         },
         {
           "key": "s+d",
@@ -2445,13 +2425,10 @@
           "gotoSpeed": 2.9
         },
         {
-          "key": null,
-          "holdSeconds": 0,
+          "key": "semicolon",
+          "holdSeconds": 0.15,
           "waitSeconds": 0,
-          "blocks": 0,
-          "action": "clicker",
-          "clickButton": null,
-          "clickCps": 0.0
+          "blocks": 0
         },
         {
           "key": "u",
@@ -2531,13 +2508,10 @@
           "lookPitch": 7
         },
         {
-          "key": null,
-          "holdSeconds": 0,
+          "key": "semicolon",
+          "holdSeconds": 0.15,
           "waitSeconds": 0,
-          "blocks": 0,
-          "action": "clicker",
-          "clickButton": "right",
-          "clickCps": 20.0
+          "blocks": 0
         },
         {
           "key": "s+d",
@@ -2576,13 +2550,10 @@
           "gotoSpeed": 2.9
         },
         {
-          "key": null,
-          "holdSeconds": 0,
+          "key": "semicolon",
+          "holdSeconds": 0.15,
           "waitSeconds": 0,
-          "blocks": 0,
-          "action": "clicker",
-          "clickButton": null,
-          "clickCps": 0.0
+          "blocks": 0
         },
         {
           "key": "w",
@@ -2630,13 +2601,10 @@
           "lookPitch": 9.7
         },
         {
-          "key": null,
-          "holdSeconds": 0,
+          "key": "semicolon",
+          "holdSeconds": 0.15,
           "waitSeconds": 0,
-          "blocks": 0,
-          "action": "clicker",
-          "clickButton": "right",
-          "clickCps": 20.0
+          "blocks": 0
         },
         {
           "key": "w+a",
@@ -2823,13 +2791,10 @@
           "gotoCoord": 26080.9
         },
         {
-          "key": null,
-          "holdSeconds": 0,
+          "key": "semicolon",
+          "holdSeconds": 0.15,
           "waitSeconds": 0,
-          "blocks": 0,
-          "action": "clicker",
-          "clickButton": null,
-          "clickCps": 0.0
+          "blocks": 0
         },
         {
           "key": null,
@@ -3001,13 +2966,10 @@
           "blocks": 0
         },
         {
-          "key": null,
-          "holdSeconds": 0,
+          "key": "semicolon",
+          "holdSeconds": 0.15,
           "waitSeconds": 0,
-          "blocks": 0,
-          "action": "clicker",
-          "clickButton": "right",
-          "clickCps": 40.0
+          "blocks": 0
         },
         {
           "key": "s+d",
@@ -3036,13 +2998,10 @@
           "gotoSpeed": 2.9
         },
         {
-          "key": null,
-          "holdSeconds": 0,
+          "key": "semicolon",
+          "holdSeconds": 0.15,
           "waitSeconds": 0,
-          "blocks": 0,
-          "action": "clicker",
-          "clickButton": null,
-          "clickCps": 0.0
+          "blocks": 0
         },
         {
           "key": "u",
@@ -3136,13 +3095,10 @@
           "lookPitch": 7
         },
         {
-          "key": null,
-          "holdSeconds": 0,
+          "key": "semicolon",
+          "holdSeconds": 0.15,
           "waitSeconds": 0,
-          "blocks": 0,
-          "action": "clicker",
-          "clickButton": "right",
-          "clickCps": 20.0
+          "blocks": 0
         },
         {
           "key": "s+d",
@@ -3181,13 +3137,10 @@
           "gotoSpeed": 2.9
         },
         {
-          "key": null,
-          "holdSeconds": 0,
+          "key": "semicolon",
+          "holdSeconds": 0.15,
           "waitSeconds": 0,
-          "blocks": 0,
-          "action": "clicker",
-          "clickButton": null,
-          "clickCps": 0.0
+          "blocks": 0
         },
         {
           "key": "w",
@@ -3249,13 +3202,10 @@
           "lookPitch": 9.7
         },
         {
-          "key": null,
-          "holdSeconds": 0,
+          "key": "semicolon",
+          "holdSeconds": 0.15,
           "waitSeconds": 0,
-          "blocks": 0,
-          "action": "clicker",
-          "clickButton": "right",
-          "clickCps": 20.0
+          "blocks": 0
         },
         {
           "key": "w+a",
@@ -3438,12 +3388,10 @@
           "gotoCoord": 113681.5
         },
         {
-          "key": null,
-          "holdSeconds": 0,
+          "key": "semicolon",
+          "holdSeconds": 0.15,
           "waitSeconds": 0,
-          "blocks": 0,
-          "action": "clicker",
-          "clickCps": 0.0
+          "blocks": 0
         },
         {
           "key": null,
