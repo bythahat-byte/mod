@@ -374,7 +374,7 @@
       "blocks": 0
     },
     {
-      "key": "w",
+      "key": "w+a",
       "holdSeconds": 0,
       "waitSeconds": 0.1,
       "blocks": 0,
@@ -428,7 +428,7 @@
       "lookPitch": 17.5
     },
     {
-      "key": "w",
+      "key": "w+a",
       "holdSeconds": 0,
       "waitSeconds": 0.1,
       "blocks": 0,
@@ -2661,7 +2661,7 @@
           "blocks": 0
         },
         {
-          "key": "w",
+          "key": "w+a",
           "holdSeconds": 0,
           "waitSeconds": 0.1,
           "blocks": 0,
@@ -2715,7 +2715,7 @@
           "lookPitch": 17.5
         },
         {
-          "key": "w",
+          "key": "w+a",
           "holdSeconds": 0,
           "waitSeconds": 0.1,
           "blocks": 0,
@@ -3290,7 +3290,7 @@
           "blocks": 0
         },
         {
-          "key": "w",
+          "key": "w+a",
           "holdSeconds": 0,
           "waitSeconds": 0.1,
           "blocks": 0,
@@ -3344,7 +3344,7 @@
           "lookPitch": 17.5
         },
         {
-          "key": "w",
+          "key": "w+a",
           "holdSeconds": 0,
           "waitSeconds": 0.1,
           "blocks": 0,
