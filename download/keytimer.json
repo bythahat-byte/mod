@@ -549,7 +549,7 @@
           "blocks": 0,
           "action": "clicker",
           "clickButton": "right",
-          "clickCps": 10.0
+          "clickCps": 20.0
         },
         {
           "key": null,
@@ -1040,6 +1040,15 @@
         {
           "key": null,
           "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 0,
+          "action": "clicker",
+          "clickButton": "right",
+          "clickCps": 20.0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
           "waitSeconds": 3,
           "blocks": 0
         },
@@ -1232,6 +1241,15 @@
           "action": "look",
           "lookYaw": 0,
           "lookPitch": 65
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 0,
+          "action": "clicker",
+          "clickButton": "right",
+          "clickCps": 20.0
         },
         {
           "key": null,
@@ -1832,6 +1850,15 @@
           "action": "look",
           "lookYaw": 0,
           "lookPitch": 65
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0,
+          "blocks": 0,
+          "action": "clicker",
+          "clickButton": "right",
+          "clickCps": 20.0
         },
         {
           "key": null,
