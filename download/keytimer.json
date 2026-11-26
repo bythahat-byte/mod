@@ -617,8 +617,14 @@
       "gotoCoord": 26062.5
     },
     {
+      "key": "space",
+      "holdSeconds": 2.5,
+      "waitSeconds": 0,
+      "blocks": 0
+    },
+    {
       "key": "w+space",
-      "holdSeconds": 3,
+      "holdSeconds": 0.6,
       "waitSeconds": 0.5,
       "blocks": 0
     }
@@ -2944,8 +2950,14 @@
           "gotoCoord": 26074.5
         },
         {
+          "key": "space",
+          "holdSeconds": 2.5,
+          "waitSeconds": 0,
+          "blocks": 0
+        },
+        {
           "key": "w+space",
-          "holdSeconds": 3,
+          "holdSeconds": 0.6,
           "waitSeconds": 0.5,
           "blocks": 0
         }
@@ -3573,8 +3585,14 @@
           "gotoCoord": 26062.5
         },
         {
+          "key": "space",
+          "holdSeconds": 2.5,
+          "waitSeconds": 0,
+          "blocks": 0
+        },
+        {
           "key": "w+space",
-          "holdSeconds": 3,
+          "holdSeconds": 0.6,
           "waitSeconds": 0.5,
           "blocks": 0
         }
