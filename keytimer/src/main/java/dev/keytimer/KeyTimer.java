@@ -771,6 +771,10 @@ public final class KeyTimer implements ClientModInitializer {
 			java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(step.item);
 			int[] guard = {0};
 			inventoryWork = () -> matches != null && guard[0]++ < 40 && dropOnce(client, matches);
+		} else if ("swapin".equals(step.action)) {
+			java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(step.item);
+			int[] guard = {0};
+			inventoryWork = () -> matches != null && guard[0]++ < 9 && swapInOnce(client, matches);
 		} else if ("stash".equals(step.action)) {
 			java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(step.item);
 			int[] slot = {0};
@@ -946,6 +950,35 @@ public final class KeyTimer implements ClientModInitializer {
 	}
 
 	/** Shift-clicks the next matching hotbar stack into the main inventory. False once every hotbar slot was checked. */
+	/**
+	 * Fills the hotbar with the item even when the inventory is full: swaps a stack of it into the next
+	 * hotbar slot that's empty or holds something else (that item goes where the stack was).
+	 */
+	private static boolean swapInOnce(MinecraftClient client, java.util.function.Predicate<net.minecraft.item.ItemStack> matches) {
+		net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
+		int target = -1;
+		for (int h = 0; h < 9 && target < 0; h++) {
+			if (inv.getStack(h).isEmpty()) {
+				target = h;
+			}
+		}
+		for (int h = 0; h < 9 && target < 0; h++) {
+			if (!matches.test(inv.getStack(h))) {
+				target = h;
+			}
+		}
+		if (target < 0) {
+			return false; // the whole hotbar already holds it
+		}
+		for (int i = 9; i < 36; i++) {
+			if (matches.test(inv.getStack(i))) {
+				click(client, i, target, net.minecraft.screen.slot.SlotActionType.SWAP); // like pressing 1-9 over it
+				return true;
+			}
+		}
+		return false; // none left in the inventory
+	}
+
 	private static boolean stashOnce(MinecraftClient client, java.util.function.Predicate<net.minecraft.item.ItemStack> matches, int[] slot) {
 		net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
 		while (slot[0] < 9) {
@@ -1374,6 +1407,7 @@ public final class KeyTimer implements ClientModInitializer {
 							: "head flick between " + s.flickMin + " and " + s.flickMax + " pitch, about every " + trim(s.flickEvery) + "s" + (s.flickSteps != null ? ", " + s.flickSteps + " angles" : ""))
 					: "deposit".equals(s.action) ? "put all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " into the chest you're looking at"
 					: "chest".equals(s.action) ? "take " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the chest you're looking at (up to " + (s.stacks > 0 ? s.stacks : 9) + " stacks)"
+					: "swapin".equals(s.action) ? "fill the hotbar with " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " (swapping out whatever is there)"
 					: "stash".equals(s.action) ? "move " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the hotbar into the inventory"
 					: "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ")
 							+ (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5).replace('_', ' ') : s.item) + " to the hotbar"
@@ -1432,6 +1466,10 @@ public final class KeyTimer implements ClientModInitializer {
 				.then(lookForm(action))
 				.then(dropForm(action))
 				.then(stashForm(action))
+				.then(literal("swapin").then(literal("named").then(argument("name", StringArgumentType.string())
+						.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx ->
+								action.run(ctx, Step.inventory("swapin", "name:" + StringArgumentType.getString(ctx, "name").trim(),
+										DoubleArgumentType.getDouble(ctx, "waitSeconds"))))))))
 				.then(chestForm(action))
 				.then(literal("deposit")
 						.then(literal("named").then(argument("name", StringArgumentType.string())
@@ -1689,6 +1727,7 @@ public final class KeyTimer implements ClientModInitializer {
 							: "head flick between " + s.flickMin + " and " + s.flickMax + " pitch, about every " + trim(s.flickEvery) + "s" + (s.flickSteps != null ? ", " + s.flickSteps + " angles" : ""))
 					: "deposit".equals(s.action) ? "put all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " into the chest you're looking at"
 					: "chest".equals(s.action) ? "take " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the chest you're looking at (up to " + (s.stacks > 0 ? s.stacks : 9) + " stacks)"
+					: "swapin".equals(s.action) ? "fill the hotbar with " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " (swapping out whatever is there)"
 					: "stash".equals(s.action) ? "move " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the hotbar into the inventory"
 					: "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ")
 							+ (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5).replace('_', ' ') : s.item) + " to the hotbar"

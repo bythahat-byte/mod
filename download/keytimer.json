@@ -214,7 +214,7 @@
       "holdSeconds": 0,
       "waitSeconds": 0.5,
       "blocks": 0,
-      "action": "refill",
+      "action": "swapin",
       "item": "name:Rennet",
       "stacks": 0,
       "wheatBelow": 0
@@ -255,7 +255,7 @@
       "holdSeconds": 0,
       "waitSeconds": 0.5,
       "blocks": 0,
-      "action": "refill",
+      "action": "swapin",
       "item": "name:Rennet",
       "stacks": 0,
       "wheatBelow": 0
@@ -2501,7 +2501,7 @@
           "holdSeconds": 0,
           "waitSeconds": 0.5,
           "blocks": 0,
-          "action": "refill",
+          "action": "swapin",
           "item": "name:Rennet",
           "stacks": 0,
           "wheatBelow": 0
@@ -2542,7 +2542,7 @@
           "holdSeconds": 0,
           "waitSeconds": 0.5,
           "blocks": 0,
-          "action": "refill",
+          "action": "swapin",
           "item": "name:Rennet",
           "stacks": 0,
           "wheatBelow": 0
@@ -3130,7 +3130,7 @@
           "holdSeconds": 0,
           "waitSeconds": 0.5,
           "blocks": 0,
-          "action": "refill",
+          "action": "swapin",
           "item": "name:Rennet",
           "stacks": 0,
           "wheatBelow": 0
@@ -3171,7 +3171,7 @@
           "holdSeconds": 0,
           "waitSeconds": 0.5,
           "blocks": 0,
-          "action": "refill",
+          "action": "swapin",
           "item": "name:Rennet",
           "stacks": 0,
           "wheatBelow": 0
