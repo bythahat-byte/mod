@@ -350,6 +350,15 @@
     {
       "key": null,
       "holdSeconds": 0,
+      "waitSeconds": 0.3,
+      "blocks": 0,
+      "action": "look",
+      "lookYaw": -180,
+      "lookPitch": 30
+    },
+    {
+      "key": null,
+      "holdSeconds": 0,
       "waitSeconds": 1.0,
       "blocks": 0,
       "action": "drop",
@@ -366,6 +375,15 @@
       "item": "name:Sheep Curds",
       "stacks": 0,
       "wheatBelow": 0
+    },
+    {
+      "key": null,
+      "holdSeconds": 0,
+      "waitSeconds": 0.2,
+      "blocks": 0,
+      "action": "look",
+      "lookYaw": -114,
+      "lookPitch": 9.7
     },
     {
       "key": "d",
@@ -2683,6 +2701,15 @@
         {
           "key": null,
           "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": -180,
+          "lookPitch": 30
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
           "waitSeconds": 1.0,
           "blocks": 0,
           "action": "drop",
@@ -2699,6 +2726,15 @@
           "item": "name:Sheep Curds",
           "stacks": 0,
           "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": -114,
+          "lookPitch": 9.7
         },
         {
           "key": "d",
@@ -3318,6 +3354,15 @@
         {
           "key": null,
           "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": -180,
+          "lookPitch": 30
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
           "waitSeconds": 1.0,
           "blocks": 0,
           "action": "drop",
@@ -3334,6 +3379,15 @@
           "item": "name:Sheep Curds",
           "stacks": 0,
           "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "action": "look",
+          "lookYaw": -114,
+          "lookPitch": 9.7
         },
         {
           "key": "d",
@@ -3595,6 +3649,31 @@
           "holdSeconds": 0.6,
           "waitSeconds": 0.5,
           "blocks": 0
+        }
+      ],
+      "loop": true,
+      "leaveItem": null,
+      "leaveBelow": 1
+    },
+    "7": {
+      "steps": [
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "action": "chest",
+          "item": "name:Clothbound Cheddar|Pecorino Romano",
+          "stacks": 9,
+          "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 1.0,
+          "blocks": 0,
+          "action": "eat",
+          "item": "Clothbound Cheddar|Pecorino Romano"
         }
       ],
       "loop": true,

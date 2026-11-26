@@ -199,6 +199,11 @@ public final class KeyTimer implements ClientModInitializer {
 	private static boolean chestWork;
 	/** Head flick: while on, your pitch wanders between flickLow and flickHigh. */
 	private static boolean flicking;
+	/** "eat" step: hold right-click with the item until none is left (or nothing gets eaten for a while). */
+	private static java.util.function.Predicate<net.minecraft.item.ItemStack> eatMatches;
+	private static int eatLastCount;
+	private static long eatProgressAt;
+	private static long eatWaitNanos;
 	private static float flickLow, flickHigh, flickTarget;
 	private static double flickEverySeconds;
 	private static long nextFlickAt;
@@ -576,6 +581,10 @@ public final class KeyTimer implements ClientModInitializer {
 			}
 			return;
 		}
+		if (eatMatches != null) {
+			tickEat(client, now);
+			return;
+		}
 		if (holdingKey != null && moving) {
 			ClientPlayerEntity player = client.player;
 			double pos = moveOnX ? player.getX() : player.getZ();
@@ -640,6 +649,18 @@ public final class KeyTimer implements ClientModInitializer {
 				client.player.setPitch(step.lookPitch);
 			}
 			nextStepAt = now + (long) (step.waitSeconds * 1_000_000_000L);
+			return;
+		}
+		if ("eat".equals(step.action)) {
+			stepIndex++;
+			eatMatches = itemMatcher(step.item);
+			if (eatMatches == null) {
+				nextStepAt = now + (long) (step.waitSeconds * 1_000_000_000L);
+				return;
+			}
+			eatLastCount = Integer.MAX_VALUE;
+			eatProgressAt = now;
+			eatWaitNanos = (long) (step.waitSeconds * 1_000_000_000L);
 			return;
 		}
 		if ("slot".equals(step.action)) {
@@ -1097,6 +1118,22 @@ public final class KeyTimer implements ClientModInitializer {
 		if (spec == null) {
 			return null;
 		}
+		if (spec.contains("|")) {
+			// any of several items: "name:Clothbound Cheddar|Pecorino Romano" (plain parts are item ids or names)
+			java.util.List<java.util.function.Predicate<net.minecraft.item.ItemStack>> parts = new ArrayList<>();
+			for (String part : spec.split("\\|")) {
+				String q = part.trim();
+				if (q.isEmpty()) {
+					continue;
+				}
+				java.util.function.Predicate<net.minecraft.item.ItemStack> m = q.startsWith("name:") ? itemMatcher(q)
+						: parseItem(q.toLowerCase(Locale.ROOT)) != null ? itemMatcher(q.toLowerCase(Locale.ROOT)) : itemMatcher("name:" + q);
+				if (m != null) {
+					parts.add(m);
+				}
+			}
+			return parts.isEmpty() ? null : stack -> !stack.isEmpty() && parts.stream().anyMatch(m -> m.test(stack));
+		}
 		if (spec.startsWith("name:")) {
 			String wanted = normalizeName(spec.substring(5));
 			return stack -> normalizeName(stack.getName().getString()).equals(wanted);
@@ -1149,6 +1186,46 @@ public final class KeyTimer implements ClientModInitializer {
 		moveTarget = Math.floor(pos) + 0.5 + moveSign * step.blocks;
 		// give up if blocked (at least 2 blocks/second plus a couple of seconds' slack)
 		moveDeadline = System.nanoTime() + (long) ((step.blocks / 2.0 + 2.0) * 1_000_000_000L);
+	}
+
+	private static void tickEat(MinecraftClient client, long now) {
+		net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
+		KeyBinding use = client.options.useKey;
+		int count = 0;
+		int first = -1;
+		for (int i = 0; i < 36; i++) {
+			if (eatMatches.test(inv.getStack(i))) {
+				count += inv.getStack(i).getCount();
+				if (first < 0 || (first >= 9 && i < 9)) {
+					first = i;
+				}
+			}
+		}
+		if (count < eatLastCount) {
+			eatLastCount = count;
+			eatProgressAt = now;
+		}
+		boolean stuck = now - eatProgressAt > 15_000_000_000L; // nothing eaten for 15 s (full, or can't eat it)
+		if (count == 0 || stuck || client.currentScreen != null) {
+			if (stuck && count > 0) {
+				actionBar(Text.literal("Key Timer: can't eat any more right now, moving on").formatted(Formatting.YELLOW));
+			}
+			use.setPressed(false);
+			eatMatches = null;
+			nextStepAt = now + eatWaitNanos;
+			return;
+		}
+		if (!eatMatches.test(client.player.getMainHandStack())) {
+			use.setPressed(false);
+			if (first < 9) {
+				KeyBinding.onKeyPressed(InputUtil.fromTranslationKey(client.options.hotbarKeys[first].getBoundKeyTranslationKey()));
+			} else {
+				client.interactionManager.clickSlot(client.player.playerScreenHandler.syncId, first, inv.getSelectedSlot(),
+						net.minecraft.screen.slot.SlotActionType.SWAP, client.player);
+			}
+			return;
+		}
+		use.setPressed(true); // keep eating
 	}
 
 	/** Aims for an exact X or Z coordinate (F3 numbers), whichever way the keys take you there. */
@@ -1330,6 +1407,10 @@ public final class KeyTimer implements ClientModInitializer {
 		moving = false;
 		flicking = false;
 		clicking = false;
+		if (eatMatches != null) {
+			eatMatches = null;
+			MinecraftClient.getInstance().options.useKey.setPressed(false);
+		}
 		if (inventoryWork != null) {
 			MinecraftClient client = MinecraftClient.getInstance();
 			inventoryWork = null;
@@ -1418,6 +1499,7 @@ public final class KeyTimer implements ClientModInitializer {
 							: "head flick between " + s.flickMin + " and " + s.flickMax + " pitch, about every " + trim(s.flickEvery) + "s" + (s.flickSteps != null ? ", " + s.flickSteps + " angles" : ""))
 					: "deposit".equals(s.action) ? "put all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " into the chest you're looking at"
 					: "chest".equals(s.action) ? "take " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the chest you're looking at (up to " + (s.stacks > 0 ? s.stacks : 9) + " stacks)"
+					: "eat".equals(s.action) ? "eat every " + s.item.replace("name:", "").replace("|", " / ") + " in the inventory"
 					: "swapin".equals(s.action) ? "fill the hotbar with " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " (swapping out whatever is there)"
 					: "stash".equals(s.action) ? "move " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the hotbar into the inventory"
 					: "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ")
@@ -1477,6 +1559,10 @@ public final class KeyTimer implements ClientModInitializer {
 				.then(lookForm(action))
 				.then(dropForm(action))
 				.then(stashForm(action))
+				.then(literal("eat").then(argument("items", StringArgumentType.string())
+						.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx ->
+								action.run(ctx, Step.inventory("eat", StringArgumentType.getString(ctx, "items").trim(),
+										DoubleArgumentType.getDouble(ctx, "waitSeconds")))))))
 				.then(literal("swapin").then(literal("named").then(argument("name", StringArgumentType.string())
 						.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx ->
 								action.run(ctx, Step.inventory("swapin", "name:" + StringArgumentType.getString(ctx, "name").trim(),
@@ -1738,6 +1824,7 @@ public final class KeyTimer implements ClientModInitializer {
 							: "head flick between " + s.flickMin + " and " + s.flickMax + " pitch, about every " + trim(s.flickEvery) + "s" + (s.flickSteps != null ? ", " + s.flickSteps + " angles" : ""))
 					: "deposit".equals(s.action) ? "put all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " into the chest you're looking at"
 					: "chest".equals(s.action) ? "take " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the chest you're looking at (up to " + (s.stacks > 0 ? s.stacks : 9) + " stacks)"
+					: "eat".equals(s.action) ? "eat every " + s.item.replace("name:", "").replace("|", " / ") + " in the inventory"
 					: "swapin".equals(s.action) ? "fill the hotbar with " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " (swapping out whatever is there)"
 					: "stash".equals(s.action) ? "move " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the hotbar into the inventory"
 					: "refill".equals(s.action) ? "move " + (s.stacks > 0 ? s.stacks + " stack" + (s.stacks == 1 ? "" : "s") + " of " : "all ")
