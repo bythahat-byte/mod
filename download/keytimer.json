@@ -354,7 +354,7 @@
       "blocks": 0,
       "action": "look",
       "lookYaw": -180,
-      "lookPitch": 30
+      "lookPitch": 1.7
     },
     {
       "key": null,
@@ -2705,7 +2705,7 @@
           "blocks": 0,
           "action": "look",
           "lookYaw": -180,
-          "lookPitch": 30
+          "lookPitch": 1.7
         },
         {
           "key": null,
@@ -3358,7 +3358,7 @@
           "blocks": 0,
           "action": "look",
           "lookYaw": -180,
-          "lookPitch": 30
+          "lookPitch": 1.7
         },
         {
           "key": null,
@@ -3663,8 +3663,8 @@
           "waitSeconds": 0.3,
           "blocks": 0,
           "action": "look",
-          "lookYaw": -180,
-          "lookPitch": 1.7
+          "lookYaw": 0,
+          "lookPitch": 0
         },
         {
           "key": null,
