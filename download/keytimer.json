@@ -649,6 +649,36 @@
         {
           "key": null,
           "holdSeconds": 0,
+          "waitSeconds": 0.5,
+          "blocks": 0,
+          "item": null,
+          "stacks": 0,
+          "wheatBelow": 0,
+          "action": "crafthay"
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.3,
+          "blocks": 0,
+          "item": "wheat",
+          "stacks": 0,
+          "wheatBelow": 0,
+          "action": "refill"
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "item": "wheat",
+          "stacks": 1,
+          "wheatBelow": 0,
+          "action": "slot"
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
           "waitSeconds": 0.3,
           "blocks": 0,
           "action": "look",
@@ -663,26 +693,6 @@
           "action": "clicker",
           "clickButton": "right",
           "clickCps": 20.0
-        },
-        {
-          "key": null,
-          "holdSeconds": 0,
-          "waitSeconds": 1,
-          "blocks": 0,
-          "action": "crafthay",
-          "item": null,
-          "stacks": 1,
-          "wheatBelow": 200
-        },
-        {
-          "key": null,
-          "holdSeconds": 0,
-          "waitSeconds": 0.5,
-          "blocks": 0,
-          "action": "refill",
-          "item": "wheat",
-          "stacks": 0,
-          "wheatBelow": 0
         },
         {
           "key": null,
@@ -795,6 +805,16 @@
           "wheatBelow": 0
         },
         {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "item": "wheat",
+          "stacks": 1,
+          "wheatBelow": 0,
+          "action": "slot"
+        },
+        {
           "key": "s",
           "holdSeconds": 0,
           "waitSeconds": 3,
@@ -905,6 +925,16 @@
           "wheatBelow": 0
         },
         {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "item": "wheat",
+          "stacks": 1,
+          "wheatBelow": 0,
+          "action": "slot"
+        },
+        {
           "key": "s",
           "holdSeconds": 0,
           "waitSeconds": 3,
@@ -1013,6 +1043,16 @@
           "item": "wheat",
           "stacks": 0,
           "wheatBelow": 0
+        },
+        {
+          "key": null,
+          "holdSeconds": 0,
+          "waitSeconds": 0.2,
+          "blocks": 0,
+          "item": "wheat",
+          "stacks": 1,
+          "wheatBelow": 0,
+          "action": "slot"
         },
         {
           "key": "s",
