@@ -80,6 +80,14 @@ public final class Recorder {
 		return fps;
 	}
 
+	public int width() {
+		return width;
+	}
+
+	public int height() {
+		return height;
+	}
+
 	/** Wall-clock time since recording started (not counting the replay-buffer lead-in). */
 	public double elapsedSeconds() {
 		return (System.nanoTime() - startedAt) / 1e9;

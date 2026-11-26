@@ -49,6 +49,90 @@ public final class ClipWriter {
 				finishedWav == null || !Files.exists(finishedWav) ? null : wav -> Files.move(finishedWav, wav), audioOffsetSeconds);
 	}
 
+	/**
+	 * A long recording saved as several AVIs (each under 4 GB): joins them into one .mp4 with ffmpeg,
+	 * or keeps them as numbered parts if that isn't possible.
+	 */
+	public static Result saveRecordingParts(List<Path> parts, Path folder, boolean wantMp4, String ffmpegPath,
+			Path wav, double audioOffsetSeconds) throws IOException {
+		Files.createDirectories(folder);
+		String base = uniqueBaseName(folder, "recording");
+		String ffmpeg = wantMp4 ? findFfmpeg(ffmpegPath) : null;
+		if (ffmpeg != null) {
+			Path list = Files.createTempFile("clipmod-parts", ".txt");
+			Path mp4 = folder.resolve(base + ".mp4");
+			try {
+				StringBuilder sb = new StringBuilder();
+				for (Path p : parts) {
+					sb.append("file '").append(p.toAbsolutePath().toString().replace("'", "'\\''")).append("'\n");
+				}
+				Files.writeString(list, sb.toString());
+				List<String> cmd = new ArrayList<>(List.of(ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
+						"-f", "concat", "-safe", "0", "-i", list.toString()));
+				if (wav != null && Files.exists(wav)) {
+					String offset = String.format(java.util.Locale.ROOT, "%.3f", Math.abs(audioOffsetSeconds));
+					if (audioOffsetSeconds > 0.0005) {
+						cmd.addAll(List.of("-itsoffset", offset));
+					} else if (audioOffsetSeconds < -0.0005) {
+						cmd.addAll(List.of("-ss", offset));
+					}
+					cmd.addAll(List.of("-i", wav.toString(), "-map", "0:v:0", "-map", "1:a:0"));
+				}
+				cmd.addAll(List.of("-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p"));
+				if (wav != null && Files.exists(wav)) {
+					cmd.addAll(List.of("-c:a", "aac", "-b:a", "192k", "-af", "apad", "-shortest"));
+				}
+				cmd.addAll(List.of("-movflags", "+faststart", mp4.toString()));
+				run(cmd);
+				for (Path p : parts) {
+					Files.deleteIfExists(p);
+				}
+				if (wav != null) {
+					Files.deleteIfExists(wav);
+				}
+				return new Result(mp4, true, parts.size() + " parts joined");
+			} catch (IOException e) {
+				Files.deleteIfExists(mp4);
+				dev.clipmod.ClipMod.LOGGER.warn("Couldn't join the recording's parts", e);
+			} finally {
+				Files.deleteIfExists(list);
+			}
+		}
+		// keep the parts as numbered .avi files (and the sound as .wav)
+		Path first = null;
+		for (int i = 0; i < parts.size(); i++) {
+			Path target = folder.resolve(base + "_part" + (i + 1) + ".avi");
+			Files.move(parts.get(i), target);
+			if (first == null) {
+				first = target;
+			}
+		}
+		if (wav != null && Files.exists(wav)) {
+			Files.move(wav, folder.resolve(base + ".wav"));
+		}
+		return new Result(first, false, "saved as " + parts.size() + " .avi parts" + (ffmpeg == null ? " (install ffmpeg to join them)" : " (joining failed)"));
+	}
+
+	private static void run(List<String> cmd) throws IOException {
+		Path log = Files.createTempFile("clipmod-ffmpeg", ".log");
+		try {
+			Process p = new ProcessBuilder(cmd).redirectErrorStream(true).redirectOutput(log.toFile()).start();
+			if (!p.waitFor(4, TimeUnit.HOURS)) {
+				p.destroyForcibly();
+				throw new IOException("ffmpeg timed out");
+			}
+			if (p.exitValue() != 0) {
+				String output = Files.readString(log).strip();
+				throw new IOException("ffmpeg exit code " + p.exitValue() + (output.isEmpty() ? "" : ": " + output.lines().reduce((a, b) -> b).orElse("")));
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IOException("interrupted");
+		} finally {
+			Files.deleteIfExists(log);
+		}
+	}
+
 	private interface FileWriter {
 		void write(Path file) throws IOException;
 	}

@@ -68,6 +68,10 @@ public final class ClipMod implements ClientModInitializer {
 	private static KeyBinding recordKey;
 	/** The long recording in progress, or null. Only touched on the client thread. */
 	private static Recorder recorder;
+	/** Earlier parts of a long recording (each AVI is capped near 4 GB), finished in the background. */
+	private static final java.util.List<java.util.concurrent.Future<Path>> recordingParts = new java.util.ArrayList<>();
+	private static long recordingFirstFrame;
+	private static long recordingStartedAt;
 	/** Stop recording when the disk gets this full, leaving room to finish the file and convert it. */
 	private static final long MIN_FREE_BYTES = 300L * 1024 * 1024;
 	private static int diskCheckTicks;
@@ -105,10 +109,12 @@ public final class ClipMod implements ClientModInitializer {
 				toggleRecording(ClipMod::chat);
 			}
 			if (recorder != null && recorder.isFull()) {
-				chat(error(recorder.error() != null
-						? "Couldn't write the recording (" + recorder.error().getMessage() + "), stopping."
-						: "Recording reached the 4 GB limit, stopping."));
-				stopRecording(ClipMod::chat);
+				if (recorder.error() != null) {
+					chat(error("Couldn't write the recording (" + recorder.error().getMessage() + "), stopping."));
+					stopRecording(ClipMod::chat);
+				} else {
+					startNextPart(); // near the 4 GB AVI limit: carry on in a new file
+				}
 			}
 			if (recorder != null && ++diskCheckTicks >= 100) { // every 5 seconds
 				diskCheckTicks = 0;
@@ -275,6 +281,9 @@ public final class ClipMod implements ClientModInitializer {
 			return;
 		}
 		recorder = rec;
+		recordingParts.clear();
+		recordingFirstFrame = 0;
+		recordingStartedAt = System.nanoTime();
 		capturer.setForcedSize(size[0], size[1]);
 		buffer.setListener(rec::accept);
 		List<EncodedFrame> leadIn = config.enabled ? buffer.rawFrames(config.bufferSeconds, size[0], size[1]) : List.of();
@@ -297,6 +306,34 @@ public final class ClipMod implements ClientModInitializer {
 						seconds, key(recordKey))).formatted(Formatting.WHITE)));
 	}
 
+	/** Finishes the current AVI in the background and keeps recording into a new one, without losing frames. */
+	private static void startNextPart() {
+		Recorder old = recorder;
+		Recorder next;
+		try {
+			next = new Recorder(old.file().resolveSibling("recording-in-progress-" + System.currentTimeMillis() + ".avi"),
+					old.width(), old.height(), old.fps());
+		} catch (Exception e) {
+			LOGGER.error("Could not start the next part of the recording", e);
+			chat(error("Couldn't continue the recording past 4 GB (" + e.getMessage() + "), stopping."));
+			stopRecording(ClipMod::chat);
+			return;
+		}
+		next.prime(List.of());
+		recorder = next;
+		buffer.setListener(next::accept);
+		recordingParts.add(SAVER.submit(() -> {
+			old.finish();
+			synchronized (recordingParts) {
+				if (recordingFirstFrame == 0) {
+					recordingFirstFrame = old.firstTimestamp();
+				}
+			}
+			return old.file();
+		}));
+		chat(info("Recording reached 4 GB, continuing in part " + (recordingParts.size() + 1) + " (they're joined when you stop)"));
+	}
+
 	private static void stopRecording(Consumer<Text> feedback) {
 		Recorder rec = recorder;
 		if (rec == null) {
@@ -312,7 +349,10 @@ public final class ClipMod implements ClientModInitializer {
 		if (wav != null) {
 			dev.clipmod.audio.AudioCapture.buffer().endStream();
 		}
-		feedback.accept(info(String.format(Locale.ROOT, "Stopped recording after %s, saving...", formatTime(rec.elapsedSeconds()))));
+		java.util.List<java.util.concurrent.Future<Path>> parts = new java.util.ArrayList<>(recordingParts);
+		recordingParts.clear();
+		double totalSeconds = (System.nanoTime() - recordingStartedAt) / 1e9;
+		feedback.accept(info(String.format(Locale.ROOT, "Stopped recording after %s, saving...", formatTime(totalSeconds))));
 		Path folder = outputFolder();
 		boolean mp4 = config.convertToMp4;
 		String ffmpeg = config.ffmpegPath;
@@ -328,10 +368,22 @@ public final class ClipMod implements ClientModInitializer {
 					}
 				}
 				double length = rec.finish();
-				double audioOffset = (audioStart - rec.firstTimestamp()) / 1e9;
-				ClipWriter.Result result = ClipWriter.saveRecording(rec.file(), folder, mp4, ffmpeg, wavFile, audioOffset);
+				java.util.List<Path> files = new java.util.ArrayList<>();
+				for (java.util.concurrent.Future<Path> part : parts) {
+					files.add(part.get());
+				}
+				files.add(rec.file());
+				long firstFrame = parts.isEmpty() ? rec.firstTimestamp() : recordingFirstFrame;
+				double audioOffset = (audioStart - firstFrame) / 1e9;
+				if (!parts.isEmpty()) {
+					length = totalSeconds;
+				}
+				ClipWriter.Result result = files.size() == 1
+						? ClipWriter.saveRecording(rec.file(), folder, mp4, ffmpeg, wavFile, audioOffset)
+						: ClipWriter.saveRecordingParts(files, folder, mp4, ffmpeg, wavFile, audioOffset);
+				double savedLength = length;
 				MinecraftClient.getInstance().execute(() -> {
-					feedback.accept(prefix().append(Text.literal("Saved " + formatTime(length) + " recording ").formatted(Formatting.GREEN))
+					feedback.accept(prefix().append(Text.literal("Saved " + formatTime(savedLength) + " recording ").formatted(Formatting.GREEN))
 							.append(fileLink(result.file())));
 					if (result.note() != null) {
 						feedback.accept(prefix().append(Text.literal(result.note()).formatted(Formatting.YELLOW)));
