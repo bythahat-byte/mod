@@ -563,6 +563,10 @@ public final class KeyTimer implements ClientModInitializer {
 				finishInventory(client, now); // something else opened; skip the rest
 				return;
 			}
+			net.minecraft.util.math.Vec3d v = client.player.getVelocity();
+			if (!chestWork && (v.x * v.x + v.z * v.z > 0.0004 || !client.player.isOnGround())) {
+				return; // servers often ignore inventory clicks while you're moving: wait until you've stopped
+			}
 			if (inventoryDelay > 0) {
 				inventoryDelay--;
 				return;
@@ -761,7 +765,7 @@ public final class KeyTimer implements ClientModInitializer {
 			client.setScreen(new net.minecraft.client.gui.screen.ingame.InventoryScreen(player));
 			openedInventory = true;
 		}
-		inventoryDelay = 2; // let the screen open
+		inventoryDelay = 4; // let the screen open (and the server catch up) before the first click
 		if ("refill".equals(step.action)) {
 			java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(step.item);
 			int[] guard = {0};
