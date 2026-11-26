@@ -591,6 +591,9 @@ public final class KeyTimer implements ClientModInitializer {
 			double vel = Math.max(0, (moveOnX ? player.getVelocity().x : player.getVelocity().z) * moveSign);
 			double error = (moveTarget - pos) * moveSign - vel * SLIDE_FACTOR; // where we'd stop if we let go now
 			boolean stuck = false;
+			if (gotoMode && (pos - gotoStartPos) * moveSign < -0.3) {
+				stuck = true; // the keys are taking us away from the target (it was behind us): stop instead of backtracking
+			}
 			if (gotoMode) {
 				if (Math.abs(pos - progressPos) > 0.25) {
 					progressPos = pos;
