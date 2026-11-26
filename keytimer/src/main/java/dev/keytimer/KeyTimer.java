@@ -195,6 +195,7 @@ public final class KeyTimer implements ClientModInitializer {
 	private static int inventoryDelay;
 	private static long inventoryWaitNanos;
 	private static boolean openedInventory;
+	private static int stillWaits;
 	/** A "chest" step is running: a chest screen being open is expected, not a reason to stop. */
 	private static boolean chestWork;
 	/** Head flick: while on, your pitch wanders between flickLow and flickHigh. */
@@ -569,8 +570,9 @@ public final class KeyTimer implements ClientModInitializer {
 				return;
 			}
 			net.minecraft.util.math.Vec3d v = client.player.getVelocity();
-			if (!chestWork && (v.x * v.x + v.z * v.z > 0.0004 || !client.player.isOnGround())) {
-				return; // servers often ignore inventory clicks while you're moving: wait until you've stopped
+			if (!chestWork && stillWaits < 20 && (v.x * v.x + v.z * v.z > 0.0025 || !client.player.isOnGround())) {
+				stillWaits++;
+				return; // servers often ignore clicks while you're moving: wait (up to 1 s) until you've stopped
 			}
 			if (inventoryDelay > 0) {
 				inventoryDelay--;
@@ -789,6 +791,7 @@ public final class KeyTimer implements ClientModInitializer {
 			client.setScreen(new net.minecraft.client.gui.screen.ingame.InventoryScreen(player));
 			openedInventory = true;
 		}
+		stillWaits = 0;
 		inventoryDelay = 4; // let the screen open (and the server catch up) before the first click
 		if ("refill".equals(step.action)) {
 			java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(step.item);
