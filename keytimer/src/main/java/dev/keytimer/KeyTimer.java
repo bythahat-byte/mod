@@ -805,7 +805,7 @@ public final class KeyTimer implements ClientModInitializer {
 		} else if ("swapin".equals(step.action)) {
 			java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(step.item);
 			int[] guard = {0};
-			inventoryWork = () -> matches != null && guard[0]++ < 9 && swapInOnce(client, matches);
+			inventoryWork = () -> matches != null && guard[0]++ < 40 && swapInOnce(client, matches);
 		} else if ("stash".equals(step.action)) {
 			java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(step.item);
 			int[] slot = {0};
@@ -1006,7 +1006,8 @@ public final class KeyTimer implements ClientModInitializer {
 			}
 		}
 		if (target < 0) {
-			return false; // the whole hotbar already holds it
+			// every hotbar slot already holds it: top up the part-used stacks instead
+			return refillOnce(client, matches);
 		}
 		for (int i = 9; i < 36; i++) {
 			if (matches.test(inv.getStack(i))) {
