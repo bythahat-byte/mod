@@ -843,7 +843,7 @@ public final class KeyTimer implements ClientModInitializer {
 		client.interactionManager.interactBlock(player, net.minecraft.util.Hand.MAIN_HAND, hit);
 		chestWork = true;
 		int want = (step.stacks > 0 ? step.stacks : 9) * 64;
-		int[] state = {0, 0, 0}; // [ticks waited for the screen, next slot to check, contents settled]
+		int[] state = {0, 0, 0, 0, 0}; // [ticks waited for the screen, next slot, settled, stacks taken, rescans]
 		inventoryDelay = 0;
 		boolean deposit = "deposit".equals(step.action);
 		inventoryWork = () -> deposit ? depositStep(client, matches, state) : chestStep(client, matches, want, state);
@@ -902,7 +902,7 @@ public final class KeyTimer implements ClientModInitializer {
 		net.minecraft.screen.ScreenHandler handler = client.player.currentScreenHandler;
 		if (state[2] == 0) {
 			state[2] = 1; // first tick with the screen open: give its contents a moment to arrive
-			inventoryDelay = 3;
+			inventoryDelay = 5;
 			return true;
 		}
 		while (state[1] < handler.slots.size()) {
@@ -911,7 +911,14 @@ public final class KeyTimer implements ClientModInitializer {
 				continue;
 			}
 			client.interactionManager.clickSlot(handler.syncId, slot.id, 0, net.minecraft.screen.slot.SlotActionType.QUICK_MOVE, client.player);
-			inventoryDelay = 1;
+			state[3]++;
+			inventoryDelay = 2; // one stack every few ticks so the server keeps up
+			return true;
+		}
+		// went through the whole chest: if nothing was taken yet, the contents may not have arrived; look again
+		if (state[3] == 0 && state[4]++ < 30) {
+			state[1] = 0;
+			inventoryDelay = 2;
 			return true;
 		}
 		return false;
