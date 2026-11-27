@@ -63,6 +63,8 @@ public final class KeyTimer implements ClientModInitializer {
 		/** goto: hold {@code key} until your X or Z ("x"/"z") reaches {@code gotoCoord}, or you get stuck. */
 		String gotoAxis;
 		Double gotoCoord;
+		/** walkto: the exact point to walk to (and how close counts as there). */
+		Double walkX, walkZ, walkTolerance;
 		/** goto: walk no faster than this many blocks a second along the axis (null = full speed). */
 		Double gotoSpeed;
 		/** flick: keep nudging your pitch to a random angle between these, every flickEvery seconds (0 = stop). */
@@ -123,6 +125,9 @@ public final class KeyTimer implements ClientModInitializer {
 			step.gotoAxis = gotoAxis;
 			step.gotoCoord = gotoCoord;
 			step.gotoSpeed = gotoSpeed;
+			step.walkX = walkX;
+			step.walkZ = walkZ;
+			step.walkTolerance = walkTolerance;
 			step.flickMin = flickMin;
 			step.flickMax = flickMax;
 			step.flickEvery = flickEvery;
@@ -204,6 +209,10 @@ public final class KeyTimer implements ClientModInitializer {
 	/** Head flick: while on, your pitch wanders between flickLow and flickHigh. */
 	private static boolean flicking;
 	/** "eat" step: hold right-click with the item until none is left (or nothing gets eaten for a while). */
+	/** walkto: target point, best distance so far and when, deadline. */
+	private static boolean walking;
+	private static double walkTX, walkTZ, walkTol, walkBest;
+	private static long walkBestAt, walkDeadline, walkWaitNanos;
 	private static java.util.function.Predicate<net.minecraft.item.ItemStack> eatMatches;
 	private static int eatLastCount;
 	private static long eatProgressAt;
@@ -591,6 +600,10 @@ public final class KeyTimer implements ClientModInitializer {
 			tickEat(client, now);
 			return;
 		}
+		if (walking) {
+			tickWalk(client, now);
+			return;
+		}
 		if (holdingKey != null && moving) {
 			ClientPlayerEntity player = client.player;
 			double pos = moveOnX ? player.getX() : player.getZ();
@@ -658,6 +671,19 @@ public final class KeyTimer implements ClientModInitializer {
 				client.player.setPitch(step.lookPitch);
 			}
 			nextStepAt = now + (long) (step.waitSeconds * 1_000_000_000L);
+			return;
+		}
+		if ("walkto".equals(step.action)) {
+			stepIndex++;
+			walking = true;
+			walkTX = step.walkX;
+			walkTZ = step.walkZ;
+			walkTol = step.walkTolerance != null ? step.walkTolerance : 0.1;
+			walkBest = Double.MAX_VALUE;
+			walkBestAt = now;
+			double dist = Math.hypot(walkTX - client.player.getX(), walkTZ - client.player.getZ());
+			walkDeadline = now + (long) ((dist / 1.5 + 6) * 1_000_000_000L);
+			walkWaitNanos = (long) (step.waitSeconds * 1_000_000_000L);
 			return;
 		}
 		if ("eat".equals(step.action)) {
@@ -1239,6 +1265,61 @@ public final class KeyTimer implements ClientModInitializer {
 		moveDeadline = System.nanoTime() + (long) ((step.blocks / 2.0 + 2.0) * 1_000_000_000L);
 	}
 
+	private static void setWalkKeys(MinecraftClient client, boolean w, boolean a, boolean s, boolean d) {
+		client.options.forwardKey.setPressed(w);
+		client.options.leftKey.setPressed(a);
+		client.options.backKey.setPressed(s);
+		client.options.rightKey.setPressed(d);
+	}
+
+	/**
+	 * walkto: steer to an exact x/z every tick, whichever way you're facing. Presses the W/A/S/D
+	 * combination that points at the target, lets go early so the slide stops you on it, and if it
+	 * stops getting closer, wiggles sideways to get round whatever it's caught on.
+	 */
+	private static void tickWalk(MinecraftClient client, long now) {
+		ClientPlayerEntity p = client.player;
+		double x = p.getX(), z = p.getZ();
+		double dx = walkTX - x, dz = walkTZ - z;
+		double dist = Math.hypot(dx, dz);
+		net.minecraft.util.math.Vec3d v = p.getVelocity();
+		if (dist < walkBest - 0.05) {
+			walkBest = dist;
+			walkBestAt = now;
+		}
+		boolean done = dist <= walkTol && v.x * v.x + v.z * v.z < 0.0004;
+		boolean gaveUp = now > walkDeadline || now - walkBestAt > 4_000_000_000L;
+		if (done || gaveUp) {
+			setWalkKeys(client, false, false, false, false);
+			walking = false;
+			if (gaveUp && dist > walkTol * 3) {
+				actionBar(Text.literal(String.format(Locale.ROOT, "Key Timer: couldn't reach %.1f, %.1f (%.1f blocks off)", walkTX, walkTZ, dist))
+						.formatted(Formatting.YELLOW));
+			}
+			nextStepAt = now + walkWaitNanos;
+			return;
+		}
+		// where we'd stop if we let go now
+		double px = walkTX - (x + v.x * SLIDE_FACTOR), pz = walkTZ - (z + v.z * SLIDE_FACTOR);
+		double yaw = Math.toRadians(p.getYaw());
+		double fx = -Math.sin(yaw), fz = Math.cos(yaw), lx = Math.cos(yaw), lz = Math.sin(yaw);
+		double fwd = px * fx + pz * fz, left = px * lx + pz * lz;
+		double th = Math.max(0.03, walkTol * 0.5);
+		boolean w = fwd > th, s = fwd < -th, a = left > th, d = left < -th;
+		if (now - walkBestAt > 1_500_000_000L) {
+			// caught on something: add a sideways step for a moment to slide round it
+			boolean flip = ((now / 400_000_000L) & 1) == 0;
+			if (Math.abs(fwd) >= Math.abs(left)) {
+				a = flip;
+				d = !flip;
+			} else {
+				w = flip;
+				s = !flip;
+			}
+		}
+		setWalkKeys(client, w, a, s, d);
+	}
+
 	private static void tickEat(MinecraftClient client, long now) {
 		net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
 		KeyBinding use = client.options.useKey;
@@ -1458,6 +1539,10 @@ public final class KeyTimer implements ClientModInitializer {
 		moving = false;
 		flicking = false;
 		clicking = false;
+		if (walking) {
+			walking = false;
+			setWalkKeys(MinecraftClient.getInstance(), false, false, false, false);
+		}
 		if (eatMatches != null) {
 			eatMatches = null;
 			MinecraftClient.getInstance().options.useKey.setPressed(false);
@@ -1550,6 +1635,7 @@ public final class KeyTimer implements ClientModInitializer {
 							: "head flick between " + s.flickMin + " and " + s.flickMax + " pitch, about every " + trim(s.flickEvery) + "s" + (s.flickSteps != null ? ", " + s.flickSteps + " angles" : ""))
 					: "deposit".equals(s.action) ? "put all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " into the chest you're looking at"
 					: "chest".equals(s.action) ? "take " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the chest you're looking at (up to " + (s.stacks > 0 ? s.stacks : 9) + " stacks)"
+					: "walkto".equals(s.action) ? "walk to x " + trim(s.walkX) + ", z " + trim(s.walkZ) + (s.walkTolerance != null ? " (within " + trim(s.walkTolerance) + ")" : "")
 					: "eat".equals(s.action) ? "eat every " + s.item.replace("name:", "").replace("|", " / ") + " in the inventory"
 					: "swapin".equals(s.action) ? "fill the hotbar with " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " (swapping out whatever is there)"
 					: "stash".equals(s.action) ? "move " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the hotbar into the inventory"
@@ -1610,6 +1696,11 @@ public final class KeyTimer implements ClientModInitializer {
 				.then(lookForm(action))
 				.then(dropForm(action))
 				.then(stashForm(action))
+				.then(literal("walkto").then(argument("x", DoubleArgumentType.doubleArg(-30_000_000, 30_000_000))
+						.then(argument("z", DoubleArgumentType.doubleArg(-30_000_000, 30_000_000))
+								.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> walkStep(ctx, action, null))
+										.then(argument("tolerance", DoubleArgumentType.doubleArg(0.02, 3)).executes(ctx ->
+												walkStep(ctx, action, DoubleArgumentType.getDouble(ctx, "tolerance"))))))))
 				.then(literal("eat").then(argument("items", StringArgumentType.string())
 						.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx ->
 								action.run(ctx, Step.inventory("eat", StringArgumentType.getString(ctx, "items").trim(),
@@ -1750,6 +1841,14 @@ public final class KeyTimer implements ClientModInitializer {
 														flickStep(ctx, action, IntegerArgumentType.getInteger(ctx, "angles"))))))));
 	}
 
+	private static int walkStep(com.mojang.brigadier.context.CommandContext<FabricClientCommandSource> ctx, StepAction action, Double tolerance) {
+		Step step = Step.inventory("walkto", null, DoubleArgumentType.getDouble(ctx, "waitSeconds"));
+		step.walkX = DoubleArgumentType.getDouble(ctx, "x");
+		step.walkZ = DoubleArgumentType.getDouble(ctx, "z");
+		step.walkTolerance = tolerance;
+		return action.run(ctx, step);
+	}
+
 	private static int flickStep(com.mojang.brigadier.context.CommandContext<FabricClientCommandSource> ctx, StepAction action, Integer angles) {
 		Step step = Step.inventory("flick", null, DoubleArgumentType.getDouble(ctx, "waitSeconds"));
 		step.flickMin = com.mojang.brigadier.arguments.FloatArgumentType.getFloat(ctx, "minPitch");
@@ -1875,6 +1974,7 @@ public final class KeyTimer implements ClientModInitializer {
 							: "head flick between " + s.flickMin + " and " + s.flickMax + " pitch, about every " + trim(s.flickEvery) + "s" + (s.flickSteps != null ? ", " + s.flickSteps + " angles" : ""))
 					: "deposit".equals(s.action) ? "put all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " into the chest you're looking at"
 					: "chest".equals(s.action) ? "take " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the chest you're looking at (up to " + (s.stacks > 0 ? s.stacks : 9) + " stacks)"
+					: "walkto".equals(s.action) ? "walk to x " + trim(s.walkX) + ", z " + trim(s.walkZ) + (s.walkTolerance != null ? " (within " + trim(s.walkTolerance) + ")" : "")
 					: "eat".equals(s.action) ? "eat every " + s.item.replace("name:", "").replace("|", " / ") + " in the inventory"
 					: "swapin".equals(s.action) ? "fill the hotbar with " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " (swapping out whatever is there)"
 					: "stash".equals(s.action) ? "move " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the hotbar into the inventory"
@@ -1918,7 +2018,8 @@ public final class KeyTimer implements ClientModInitializer {
 				&& java.util.Objects.equals(a.lookYaw, b.lookYaw) && java.util.Objects.equals(a.lookPitch, b.lookPitch)
 				&& java.util.Objects.equals(a.gotoAxis, b.gotoAxis) && java.util.Objects.equals(a.gotoCoord, b.gotoCoord) && java.util.Objects.equals(a.gotoSpeed, b.gotoSpeed)
 				&& java.util.Objects.equals(a.flickMin, b.flickMin) && java.util.Objects.equals(a.flickMax, b.flickMax) && java.util.Objects.equals(a.flickEvery, b.flickEvery) && java.util.Objects.equals(a.flickSteps, b.flickSteps)
-				&& java.util.Objects.equals(a.clickButton, b.clickButton) && java.util.Objects.equals(a.clickCps, b.clickCps);
+				&& java.util.Objects.equals(a.clickButton, b.clickButton) && java.util.Objects.equals(a.clickCps, b.clickCps)
+				&& java.util.Objects.equals(a.walkX, b.walkX) && java.util.Objects.equals(a.walkZ, b.walkZ) && java.util.Objects.equals(a.walkTolerance, b.walkTolerance);
 	}
 
 	private static String trim(double d) {

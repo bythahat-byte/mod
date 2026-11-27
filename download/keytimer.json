@@ -144,12 +144,14 @@
       "blocks": 0
     },
     {
-      "key": "a",
+      "key": null,
       "holdSeconds": 0,
       "waitSeconds": 0,
       "blocks": 0,
-      "gotoAxis": "x",
-      "gotoCoord": 113681.5
+      "action": "walkto",
+      "walkX": 113681.5,
+      "walkZ": 26068.6,
+      "walkTolerance": 0.1
     },
     {
       "key": null,
@@ -158,26 +160,24 @@
       "blocks": 0
     },
     {
-      "key": "w",
+      "key": null,
       "holdSeconds": 0,
-      "waitSeconds": 0.1,
+      "waitSeconds": 0,
       "blocks": 0,
-      "gotoAxis": "z",
-      "gotoCoord": 26064.0
+      "action": "walkto",
+      "walkX": 113681.6,
+      "walkZ": 26067.5,
+      "walkTolerance": 0.15
     },
     {
-      "key": "d",
-      "holdSeconds": 0.1,
-      "waitSeconds": 0.1,
-      "blocks": 0
-    },
-    {
-      "key": "w",
+      "key": null,
       "holdSeconds": 0,
       "waitSeconds": 0.3,
       "blocks": 0,
-      "gotoAxis": "z",
-      "gotoCoord": 26062.5
+      "action": "walkto",
+      "walkX": 113681.6,
+      "walkZ": 26062.5,
+      "walkTolerance": 0.1
     },
     {
       "key": null,
@@ -275,26 +275,24 @@
       "blocks": 0
     },
     {
-      "key": "w",
+      "key": null,
       "holdSeconds": 0,
-      "waitSeconds": 0.1,
+      "waitSeconds": 0,
       "blocks": 0,
-      "gotoAxis": "z",
-      "gotoCoord": 26064.0
+      "action": "walkto",
+      "walkX": 113681.6,
+      "walkZ": 26067.5,
+      "walkTolerance": 0.15
     },
     {
-      "key": "d",
-      "holdSeconds": 0.1,
-      "waitSeconds": 0.1,
-      "blocks": 0
-    },
-    {
-      "key": "w",
+      "key": null,
       "holdSeconds": 0,
       "waitSeconds": 0.3,
       "blocks": 0,
-      "gotoAxis": "z",
-      "gotoCoord": 26062.5
+      "action": "walkto",
+      "walkX": 113681.6,
+      "walkZ": 26062.5,
+      "walkTolerance": 0.1
     },
     {
       "key": null,
@@ -386,18 +384,14 @@
       "lookPitch": 9.7
     },
     {
-      "key": "d",
-      "holdSeconds": 0.15,
-      "waitSeconds": 0.1,
-      "blocks": 0
-    },
-    {
-      "key": "w",
+      "key": null,
       "holdSeconds": 0,
       "waitSeconds": 0.1,
       "blocks": 0,
-      "gotoAxis": "x",
-      "gotoCoord": 113913.6
+      "action": "walkto",
+      "walkX": 113913.7,
+      "walkZ": 26062.8,
+      "walkTolerance": 0.15
     },
     {
       "key": "w+a",
@@ -446,37 +440,14 @@
       "lookPitch": 17.5
     },
     {
-      "key": "w+a",
-      "holdSeconds": 0,
-      "waitSeconds": 0.1,
-      "blocks": 0,
-      "gotoAxis": "x",
-      "gotoCoord": 114142.7
-    },
-    {
-      "key": "d",
-      "holdSeconds": 0,
-      "waitSeconds": 0.3,
-      "blocks": 0,
-      "gotoAxis": "z",
-      "gotoCoord": 26068.3
-    },
-    {
       "key": null,
       "holdSeconds": 0,
       "waitSeconds": 0.3,
       "blocks": 0,
-      "action": "look",
-      "lookYaw": 114,
-      "lookPitch": 17.5
-    },
-    {
-      "key": "w+a",
-      "holdSeconds": 0,
-      "waitSeconds": 0.1,
-      "blocks": 0,
-      "gotoAxis": "x",
-      "gotoCoord": 114141.3
+      "action": "walkto",
+      "walkX": 114142.4,
+      "walkZ": 26068.4,
+      "walkTolerance": 0.15
     },
     {
       "key": null,
@@ -516,10 +487,14 @@
       "wheatBelow": 0
     },
     {
-      "key": "a",
-      "holdSeconds": 0.15,
+      "key": null,
+      "holdSeconds": 0,
       "waitSeconds": 0.1,
-      "blocks": 0
+      "blocks": 0,
+      "action": "walkto",
+      "walkX": 113911.4,
+      "walkZ": 26068.8,
+      "walkTolerance": 0.15
     },
     {
       "key": "w+d",
@@ -530,12 +505,14 @@
       "gotoCoord": 113684.0
     },
     {
-      "key": "w",
+      "key": null,
       "holdSeconds": 0,
       "waitSeconds": 0.1,
       "blocks": 0,
-      "gotoAxis": "x",
-      "gotoCoord": 113681.5
+      "action": "walkto",
+      "walkX": 113681.65,
+      "walkZ": 26068.4,
+      "walkTolerance": 0.1
     },
     {
       "key": "semicolon",
@@ -553,40 +530,34 @@
       "lookPitch": 9.7
     },
     {
-      "key": "w",
+      "key": null,
       "holdSeconds": 0,
-      "waitSeconds": 0.1,
+      "waitSeconds": 0,
       "blocks": 0,
-      "gotoAxis": "z",
-      "gotoCoord": 26066.6
+      "action": "walkto",
+      "walkX": 113681.65,
+      "walkZ": 26066.6,
+      "walkTolerance": 0.15
     },
     {
-      "key": "d",
-      "holdSeconds": 0.15,
-      "waitSeconds": 0.1,
-      "blocks": 0
-    },
-    {
-      "key": "w",
+      "key": null,
       "holdSeconds": 0,
-      "waitSeconds": 0.1,
+      "waitSeconds": 0,
       "blocks": 0,
-      "gotoAxis": "z",
-      "gotoCoord": 26062.3
+      "action": "walkto",
+      "walkX": 113681.65,
+      "walkZ": 26062.7,
+      "walkTolerance": 0.1
     },
     {
-      "key": "a",
-      "holdSeconds": 0.15,
-      "waitSeconds": 0.1,
-      "blocks": 0
-    },
-    {
-      "key": "w",
+      "key": null,
       "holdSeconds": 0,
       "waitSeconds": 0.2,
       "blocks": 0,
-      "gotoAxis": "z",
-      "gotoCoord": 26061.9
+      "action": "walkto",
+      "walkX": 113681.5,
+      "walkZ": 26062.5,
+      "walkTolerance": 0.06
     },
     {
       "key": null,
@@ -627,12 +598,14 @@
       "lookPitch": 0
     },
     {
-      "key": "s",
+      "key": null,
       "holdSeconds": 0,
       "waitSeconds": 0.2,
       "blocks": 0,
-      "gotoAxis": "z",
-      "gotoCoord": 26062.5
+      "action": "walkto",
+      "walkX": 113681.5,
+      "walkZ": 26062.5,
+      "walkTolerance": 0.06
     },
     {
       "key": "space",
@@ -2495,12 +2468,14 @@
           "blocks": 0
         },
         {
-          "key": "a",
+          "key": null,
           "holdSeconds": 0,
           "waitSeconds": 0,
           "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 113681.5
+          "action": "walkto",
+          "walkX": 113681.5,
+          "walkZ": 26080.6,
+          "walkTolerance": 0.1
         },
         {
           "key": null,
@@ -2509,26 +2484,24 @@
           "blocks": 0
         },
         {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
-          "waitSeconds": 0.1,
+          "waitSeconds": 0,
           "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26076.0
+          "action": "walkto",
+          "walkX": 113681.6,
+          "walkZ": 26079.5,
+          "walkTolerance": 0.15
         },
         {
-          "key": "d",
-          "holdSeconds": 0.1,
-          "waitSeconds": 0.1,
-          "blocks": 0
-        },
-        {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
           "waitSeconds": 0.3,
           "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26074.5
+          "action": "walkto",
+          "walkX": 113681.6,
+          "walkZ": 26074.5,
+          "walkTolerance": 0.1
         },
         {
           "key": null,
@@ -2626,26 +2599,24 @@
           "blocks": 0
         },
         {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
-          "waitSeconds": 0.1,
+          "waitSeconds": 0,
           "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26076.0
+          "action": "walkto",
+          "walkX": 113681.6,
+          "walkZ": 26079.5,
+          "walkTolerance": 0.15
         },
         {
-          "key": "d",
-          "holdSeconds": 0.1,
-          "waitSeconds": 0.1,
-          "blocks": 0
-        },
-        {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
           "waitSeconds": 0.3,
           "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26074.5
+          "action": "walkto",
+          "walkX": 113681.6,
+          "walkZ": 26074.5,
+          "walkTolerance": 0.1
         },
         {
           "key": null,
@@ -2737,18 +2708,14 @@
           "lookPitch": 9.7
         },
         {
-          "key": "d",
-          "holdSeconds": 0.15,
-          "waitSeconds": 0.1,
-          "blocks": 0
-        },
-        {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
           "waitSeconds": 0.1,
           "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 113913.6
+          "action": "walkto",
+          "walkX": 113913.7,
+          "walkZ": 26074.8,
+          "walkTolerance": 0.15
         },
         {
           "key": "w+a",
@@ -2797,37 +2764,14 @@
           "lookPitch": 17.5
         },
         {
-          "key": "w+a",
-          "holdSeconds": 0,
-          "waitSeconds": 0.1,
-          "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 114142.7
-        },
-        {
-          "key": "d",
-          "holdSeconds": 0,
-          "waitSeconds": 0.3,
-          "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26080.3
-        },
-        {
           "key": null,
           "holdSeconds": 0,
           "waitSeconds": 0.3,
           "blocks": 0,
-          "action": "look",
-          "lookYaw": 114,
-          "lookPitch": 17.5
-        },
-        {
-          "key": "w+a",
-          "holdSeconds": 0,
-          "waitSeconds": 0.1,
-          "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 114141.3
+          "action": "walkto",
+          "walkX": 114142.4,
+          "walkZ": 26080.4,
+          "walkTolerance": 0.15
         },
         {
           "key": null,
@@ -2867,10 +2811,14 @@
           "wheatBelow": 0
         },
         {
-          "key": "a",
-          "holdSeconds": 0.15,
+          "key": null,
+          "holdSeconds": 0,
           "waitSeconds": 0.1,
-          "blocks": 0
+          "blocks": 0,
+          "action": "walkto",
+          "walkX": 113911.4,
+          "walkZ": 26080.8,
+          "walkTolerance": 0.15
         },
         {
           "key": "w+d",
@@ -2881,12 +2829,14 @@
           "gotoCoord": 113684.0
         },
         {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
           "waitSeconds": 0.1,
           "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 113681.5
+          "action": "walkto",
+          "walkX": 113681.65,
+          "walkZ": 26080.4,
+          "walkTolerance": 0.1
         },
         {
           "key": "semicolon",
@@ -2904,40 +2854,34 @@
           "lookPitch": 9.7
         },
         {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
-          "waitSeconds": 0.1,
+          "waitSeconds": 0,
           "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26078.6
+          "action": "walkto",
+          "walkX": 113681.65,
+          "walkZ": 26078.6,
+          "walkTolerance": 0.15
         },
         {
-          "key": "d",
-          "holdSeconds": 0.15,
-          "waitSeconds": 0.1,
-          "blocks": 0
-        },
-        {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
-          "waitSeconds": 0.1,
+          "waitSeconds": 0,
           "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26074.3
+          "action": "walkto",
+          "walkX": 113681.65,
+          "walkZ": 26074.7,
+          "walkTolerance": 0.1
         },
         {
-          "key": "a",
-          "holdSeconds": 0.15,
-          "waitSeconds": 0.1,
-          "blocks": 0
-        },
-        {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
           "waitSeconds": 0.2,
           "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26073.9
+          "action": "walkto",
+          "walkX": 113681.5,
+          "walkZ": 26074.5,
+          "walkTolerance": 0.06
         },
         {
           "key": null,
@@ -2978,12 +2922,14 @@
           "lookPitch": 0
         },
         {
-          "key": "s",
+          "key": null,
           "holdSeconds": 0,
           "waitSeconds": 0.2,
           "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26074.5
+          "action": "walkto",
+          "walkX": 113681.5,
+          "walkZ": 26074.5,
+          "walkTolerance": 0.06
         },
         {
           "key": "space",
@@ -3148,12 +3094,14 @@
           "blocks": 0
         },
         {
-          "key": "a",
+          "key": null,
           "holdSeconds": 0,
           "waitSeconds": 0,
           "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 113681.5
+          "action": "walkto",
+          "walkX": 113681.5,
+          "walkZ": 26068.6,
+          "walkTolerance": 0.1
         },
         {
           "key": null,
@@ -3162,26 +3110,24 @@
           "blocks": 0
         },
         {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
-          "waitSeconds": 0.1,
+          "waitSeconds": 0,
           "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26064.0
+          "action": "walkto",
+          "walkX": 113681.6,
+          "walkZ": 26067.5,
+          "walkTolerance": 0.15
         },
         {
-          "key": "d",
-          "holdSeconds": 0.1,
-          "waitSeconds": 0.1,
-          "blocks": 0
-        },
-        {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
           "waitSeconds": 0.3,
           "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26062.5
+          "action": "walkto",
+          "walkX": 113681.6,
+          "walkZ": 26062.5,
+          "walkTolerance": 0.1
         },
         {
           "key": null,
@@ -3279,26 +3225,24 @@
           "blocks": 0
         },
         {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
-          "waitSeconds": 0.1,
+          "waitSeconds": 0,
           "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26064.0
+          "action": "walkto",
+          "walkX": 113681.6,
+          "walkZ": 26067.5,
+          "walkTolerance": 0.15
         },
         {
-          "key": "d",
-          "holdSeconds": 0.1,
-          "waitSeconds": 0.1,
-          "blocks": 0
-        },
-        {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
           "waitSeconds": 0.3,
           "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26062.5
+          "action": "walkto",
+          "walkX": 113681.6,
+          "walkZ": 26062.5,
+          "walkTolerance": 0.1
         },
         {
           "key": null,
@@ -3390,18 +3334,14 @@
           "lookPitch": 9.7
         },
         {
-          "key": "d",
-          "holdSeconds": 0.15,
-          "waitSeconds": 0.1,
-          "blocks": 0
-        },
-        {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
           "waitSeconds": 0.1,
           "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 113913.6
+          "action": "walkto",
+          "walkX": 113913.7,
+          "walkZ": 26062.8,
+          "walkTolerance": 0.15
         },
         {
           "key": "w+a",
@@ -3450,37 +3390,14 @@
           "lookPitch": 17.5
         },
         {
-          "key": "w+a",
-          "holdSeconds": 0,
-          "waitSeconds": 0.1,
-          "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 114142.7
-        },
-        {
-          "key": "d",
-          "holdSeconds": 0,
-          "waitSeconds": 0.3,
-          "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26068.3
-        },
-        {
           "key": null,
           "holdSeconds": 0,
           "waitSeconds": 0.3,
           "blocks": 0,
-          "action": "look",
-          "lookYaw": 114,
-          "lookPitch": 17.5
-        },
-        {
-          "key": "w+a",
-          "holdSeconds": 0,
-          "waitSeconds": 0.1,
-          "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 114141.3
+          "action": "walkto",
+          "walkX": 114142.4,
+          "walkZ": 26068.4,
+          "walkTolerance": 0.15
         },
         {
           "key": null,
@@ -3520,10 +3437,14 @@
           "wheatBelow": 0
         },
         {
-          "key": "a",
-          "holdSeconds": 0.15,
+          "key": null,
+          "holdSeconds": 0,
           "waitSeconds": 0.1,
-          "blocks": 0
+          "blocks": 0,
+          "action": "walkto",
+          "walkX": 113911.4,
+          "walkZ": 26068.8,
+          "walkTolerance": 0.15
         },
         {
           "key": "w+d",
@@ -3534,12 +3455,14 @@
           "gotoCoord": 113684.0
         },
         {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
           "waitSeconds": 0.1,
           "blocks": 0,
-          "gotoAxis": "x",
-          "gotoCoord": 113681.5
+          "action": "walkto",
+          "walkX": 113681.65,
+          "walkZ": 26068.4,
+          "walkTolerance": 0.1
         },
         {
           "key": "semicolon",
@@ -3557,40 +3480,34 @@
           "lookPitch": 9.7
         },
         {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
-          "waitSeconds": 0.1,
+          "waitSeconds": 0,
           "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26066.6
+          "action": "walkto",
+          "walkX": 113681.65,
+          "walkZ": 26066.6,
+          "walkTolerance": 0.15
         },
         {
-          "key": "d",
-          "holdSeconds": 0.15,
-          "waitSeconds": 0.1,
-          "blocks": 0
-        },
-        {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
-          "waitSeconds": 0.1,
+          "waitSeconds": 0,
           "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26062.3
+          "action": "walkto",
+          "walkX": 113681.65,
+          "walkZ": 26062.7,
+          "walkTolerance": 0.1
         },
         {
-          "key": "a",
-          "holdSeconds": 0.15,
-          "waitSeconds": 0.1,
-          "blocks": 0
-        },
-        {
-          "key": "w",
+          "key": null,
           "holdSeconds": 0,
           "waitSeconds": 0.2,
           "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26061.9
+          "action": "walkto",
+          "walkX": 113681.5,
+          "walkZ": 26062.5,
+          "walkTolerance": 0.06
         },
         {
           "key": null,
@@ -3631,12 +3548,14 @@
           "lookPitch": 0
         },
         {
-          "key": "s",
+          "key": null,
           "holdSeconds": 0,
           "waitSeconds": 0.2,
           "blocks": 0,
-          "gotoAxis": "z",
-          "gotoCoord": 26062.5
+          "action": "walkto",
+          "walkX": 113681.5,
+          "walkZ": 26062.5,
+          "walkTolerance": 0.06
         },
         {
           "key": "space",
