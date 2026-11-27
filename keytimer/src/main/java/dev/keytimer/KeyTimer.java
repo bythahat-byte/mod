@@ -804,7 +804,13 @@ public final class KeyTimer implements ClientModInitializer {
 		ClientPlayerEntity player = client.player;
 		inventoryWaitNanos = (long) (step.waitSeconds * 1_000_000_000L);
 		nextStepAt = Long.MAX_VALUE;
-		if (client.currentScreen != null && !(client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen)) {
+		boolean containerOpen = client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?>
+				&& !(client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen);
+		if (containerOpen && !("chest".equals(step.action) || "deposit".equals(step.action))) {
+			player.closeHandledScreen(); // a chest got opened by a stray click: close it and carry on
+		}
+		if (client.currentScreen != null && !(client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen)
+				&& !(containerOpen && ("chest".equals(step.action) || "deposit".equals(step.action)))) {
 			say(Text.literal("Key Timer: skipped " + step.action + " because a " + client.currentScreen.getClass().getSimpleName()
 					+ " screen was open").formatted(Formatting.YELLOW));
 			nextStepAt = System.nanoTime() + inventoryWaitNanos; // a chest or menu is open: skip this step
