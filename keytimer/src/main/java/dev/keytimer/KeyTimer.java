@@ -196,6 +196,9 @@ public final class KeyTimer implements ClientModInitializer {
 	private static long inventoryWaitNanos;
 	private static boolean openedInventory;
 	private static int stillWaits;
+	/** For the "moved nothing" message: which inventory step is running and how many clicks it made. */
+	private static String invAction, invItem, invEndReason;
+	private static int invClicks;
 	/** A "chest" step is running: a chest screen being open is expected, not a reason to stop. */
 	private static boolean chestWork;
 	/** Head flick: while on, your pitch wanders between flickLow and flickHigh. */
@@ -566,6 +569,7 @@ public final class KeyTimer implements ClientModInitializer {
 		}
 		if (inventoryWork != null) {
 			if (!chestWork && client.currentScreen != null && !(client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen)) {
+				invEndReason = "another screen opened (" + client.currentScreen.getClass().getSimpleName() + ")";
 				finishInventory(client, now); // something else opened; skip the rest
 				return;
 			}
@@ -775,6 +779,8 @@ public final class KeyTimer implements ClientModInitializer {
 		inventoryWaitNanos = (long) (step.waitSeconds * 1_000_000_000L);
 		nextStepAt = Long.MAX_VALUE;
 		if (client.currentScreen != null && !(client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen)) {
+			say(Text.literal("Key Timer: skipped " + step.action + " because a " + client.currentScreen.getClass().getSimpleName()
+					+ " screen was open").formatted(Formatting.YELLOW));
 			nextStepAt = System.nanoTime() + inventoryWaitNanos; // a chest or menu is open: skip this step
 			return;
 		}
@@ -792,6 +798,10 @@ public final class KeyTimer implements ClientModInitializer {
 			openedInventory = true;
 		}
 		stillWaits = 0;
+		invAction = step.action;
+		invItem = step.item;
+		invClicks = 0;
+		invEndReason = null;
 		inventoryDelay = 4; // let the screen open (and the server catch up) before the first click
 		if ("refill".equals(step.action)) {
 			java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(step.item);
@@ -820,8 +830,41 @@ public final class KeyTimer implements ClientModInitializer {
 		}
 	}
 
+	/** Says why a refill / swapin / stash step didn't move anything, so problems can be tracked down. */
+	private static void reportNothingMoved(MinecraftClient client) {
+		if (invClicks > 0 || client.player == null || invItem == null
+				|| !("refill".equals(invAction) || "swapin".equals(invAction) || "stash".equals(invAction))) {
+			return;
+		}
+		java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(invItem);
+		net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
+		int inInv = 0, inHotbar = 0, emptyHotbar = 0;
+		for (int i = 0; i < 36; i++) {
+			net.minecraft.item.ItemStack st = inv.getStack(i);
+			if (i < 9 && st.isEmpty()) {
+				emptyHotbar++;
+			}
+			if (matches != null && matches.test(st)) {
+				if (i < 9) {
+					inHotbar += st.getCount();
+				} else {
+					inInv += st.getCount();
+				}
+			}
+		}
+		String what = invItem.startsWith("name:") ? invItem.substring(5) : invItem;
+		String why = invEndReason != null ? invEndReason
+				: matches == null ? "no item called that"
+				: "stash".equals(invAction) ? (inHotbar == 0 ? "none in the hotbar" : "no room in the inventory")
+				: inInv == 0 ? "none in the inventory (names must match exactly)"
+				: "no room in the hotbar";
+		say(Text.literal("Key Timer: " + invAction + " " + what + " moved nothing: " + why
+				+ " [inventory " + inInv + ", hotbar " + inHotbar + ", empty hotbar slots " + emptyHotbar + "]").formatted(Formatting.YELLOW));
+	}
+
 	private static void finishInventory(MinecraftClient client, long now) {
 		inventoryWork = null;
+		reportNothingMoved(client);
 		if (openedInventory && client.player != null
 				&& (client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen
 						|| (chestWork && client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?>))) {
@@ -953,6 +996,7 @@ public final class KeyTimer implements ClientModInitializer {
 
 	private static void click(MinecraftClient client, int slotId, int button, net.minecraft.screen.slot.SlotActionType type) {
 		ClientPlayerEntity player = client.player;
+		invClicks++;
 		client.interactionManager.clickSlot(player.playerScreenHandler.syncId, slotId, button, type, player);
 	}
 
