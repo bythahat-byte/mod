@@ -930,32 +930,70 @@ public final class KeyTimer implements ClientModInitializer {
 		ClientPlayerEntity player = client.player;
 		java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(step.item);
 		openedInventory = false;
-		if (matches == null || !(client.crosshairTarget instanceof net.minecraft.util.hit.BlockHitResult hit)
-				|| hit.getType() != net.minecraft.util.hit.HitResult.Type.BLOCK) {
-			actionBar(Text.literal("Key Timer: not looking at a chest, skipped that step").formatted(Formatting.RED));
+		if (matches == null) {
 			nextStepAt = System.nanoTime() + inventoryWaitNanos;
 			return;
 		}
-		client.interactionManager.interactBlock(player, net.minecraft.util.Hand.MAIN_HAND, hit);
-		chestWork = true;
+		chestWork = true; // the chest is opened from the work loop, once you've stopped moving
 		int want = (step.stacks > 0 ? step.stacks : 9) * 64;
-		int[] state = {0, 0, 0, 0, 0}; // [ticks waited for the screen, next slot, settled, stacks taken, rescans]
+		chestItemName = step.item.startsWith("name:") ? step.item.substring(5) : step.item;
+		// [ticks waited for the screen, next slot, settled, stacks taken, rescans, open attempts, opened?, still-wait ticks]
+		int[] state = {0, 0, 0, 0, 0, 0, 0, 0};
 		inventoryDelay = 0;
 		boolean deposit = "deposit".equals(step.action);
 		inventoryWork = () -> deposit ? depositStep(client, matches, state) : chestStep(client, matches, want, state);
 	}
 
+	private static String chestItemName = "";
+
+	/**
+	 * Opens the chest you're looking at, once you're standing still, with a fresh look at what the
+	 * crosshair is on, and tries again (up to 3 times) if it doesn't open.
+	 * Returns 1 while waiting, 0 once a chest screen is open, -1 to give up.
+	 */
+	private static int openChest(MinecraftClient client, int[] state) {
+		boolean open = client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?>
+				&& !(client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen);
+		if (open) {
+			openedInventory = true; // close it when done
+			return 0;
+		}
+		ClientPlayerEntity player = client.player;
+		if (state[6] == 0) {
+			net.minecraft.util.math.Vec3d v = player.getVelocity();
+			if (state[7]++ < 20 && (v.x * v.x + v.z * v.z > 0.0025 || !player.isOnGround())) {
+				return 1; // let you come to a stop first (up to 1 s)
+			}
+			net.minecraft.util.hit.HitResult hit = player.raycast(player.getBlockInteractionRange(), 1.0f, false);
+			if (!(hit instanceof net.minecraft.util.hit.BlockHitResult bhit) || hit.getType() != net.minecraft.util.hit.HitResult.Type.BLOCK) {
+				say(Text.literal("Key Timer: not looking at a chest (too far away, or aimed past it), skipped taking " + chestItemName)
+						.formatted(Formatting.RED));
+				return -1;
+			}
+			client.interactionManager.interactBlock(player, net.minecraft.util.Hand.MAIN_HAND, bhit);
+			state[6] = 1;
+			state[5]++;
+			state[0] = 0;
+			return 1;
+		}
+		if (state[0]++ < 30) {
+			return 1; // wait up to 1.5 s for it to open
+		}
+		if (state[5] < 3) {
+			state[6] = 0; // try opening it again
+			state[7] = 0;
+			return 1;
+		}
+		say(Text.literal("Key Timer: the chest didn't open after 3 tries, skipped taking " + chestItemName).formatted(Formatting.RED));
+		return -1;
+	}
+
 	/** "deposit": shift-clicks every matching stack from your inventory into the open chest. */
 	private static boolean depositStep(MinecraftClient client, java.util.function.Predicate<net.minecraft.item.ItemStack> matches, int[] state) {
-		if (!(client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?>)
-				|| client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen) {
-			if (state[0]++ < 40) {
-				return true; // wait up to 2 seconds for the chest to open
-			}
-			actionBar(Text.literal("Key Timer: the chest didn't open").formatted(Formatting.RED));
-			return false;
+		int o = openChest(client, state);
+		if (o != 0) {
+			return o > 0;
 		}
-		openedInventory = true; // close it when done
 		if (state[2] == 0) {
 			state[2] = 1;
 			inventoryDelay = 3;
@@ -976,15 +1014,10 @@ public final class KeyTimer implements ClientModInitializer {
 	}
 
 	private static boolean chestStep(MinecraftClient client, java.util.function.Predicate<net.minecraft.item.ItemStack> matches, int want, int[] state) {
-		if (!(client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?>)
-				|| client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen) {
-			if (state[0]++ < 40) {
-				return true; // wait up to 2 seconds for the chest to open
-			}
-			actionBar(Text.literal("Key Timer: the chest didn't open").formatted(Formatting.RED));
-			return false;
+		int o = openChest(client, state);
+		if (o != 0) {
+			return o > 0;
 		}
-		openedInventory = true; // close it when done
 		net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
 		int have = 0;
 		for (int i = 0; i < 36; i++) {
@@ -1016,6 +1049,10 @@ public final class KeyTimer implements ClientModInitializer {
 			state[1] = 0;
 			inventoryDelay = 2;
 			return true;
+		}
+		if (state[3] == 0) {
+			say(Text.literal("Key Timer: found no " + chestItemName + " in that chest (you have " + have / 64 + " stacks, wanted "
+					+ want / 64 + ")").formatted(Formatting.YELLOW));
 		}
 		return false;
 	}
