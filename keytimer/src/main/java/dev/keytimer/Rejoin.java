@@ -78,6 +78,16 @@ final class Rejoin {
 			return;
 		}
 		long now = System.nanoTime();
+		if (state != State.WAIT && state != State.LOST && client.getOverlay() != null) {
+			at = Math.max(at, now + 3 * SECOND); // a texture pack is loading: wait until it's done, plus a few seconds
+			return;
+		}
+		if (client.currentScreen instanceof net.minecraft.client.gui.screen.ConfirmScreen confirm
+				&& (state == State.CONNECTING || state == State.LOBBY || state == State.MENU || state == State.TRANSFER)) {
+			pressProceed(confirm); // the "use the server's resource pack?" question
+			at = Math.max(at, now + 5 * SECOND);
+			return;
+		}
 		switch (state) {
 			case LOST -> {
 				if (client.player != null && !safeLogoutPending && !checkPlayers) {
@@ -199,6 +209,16 @@ final class Rejoin {
 		}
 	}
 
+	/** Clicks the first button (Proceed / Yes) on a confirm screen. */
+	private static void pressProceed(net.minecraft.client.gui.screen.ConfirmScreen screen) {
+		for (net.minecraft.client.gui.Element e : screen.children()) {
+			if (e instanceof net.minecraft.client.gui.widget.ButtonWidget button) {
+				button.onPress(null);
+				return;
+			}
+		}
+	}
+
 	private static void arrived(long now) {
 		state = State.CHECK;
 		at = now + 5 * SECOND; // let the Tab list fill in and the world load
@@ -227,6 +247,7 @@ final class Rejoin {
 	private static void connect(MinecraftClient client) {
 		String address = KeyTimer.config().rejoinServer;
 		ServerInfo info = new ServerInfo("Key Timer rejoin", address, ServerInfo.ServerType.OTHER);
+		info.setResourcePackPolicy(ServerInfo.ResourcePackPolicy.ENABLED); // accept the server's texture pack without asking
 		state = State.CONNECTING;
 		at = System.nanoTime() + 40 * SECOND;
 		status = "connecting to " + address;
