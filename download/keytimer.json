@@ -3609,7 +3609,7 @@
           "waitSeconds": 0.5,
           "blocks": 0,
           "action": "chest",
-          "item": "name:Clothbound Cheddar|Pecorino Romano",
+          "item": "name:Clothbound Cheddar|Pecorino Romano|Double Gloucester",
           "stacks": 9,
           "wheatBelow": 0
         },
@@ -3628,7 +3628,7 @@
           "waitSeconds": 1.0,
           "blocks": 0,
           "action": "eat",
-          "item": "Clothbound Cheddar|Pecorino Romano"
+          "item": "Clothbound Cheddar|Pecorino Romano|Double Gloucester"
         }
       ],
       "loop": true,
