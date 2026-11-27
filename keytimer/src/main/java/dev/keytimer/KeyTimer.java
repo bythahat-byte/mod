@@ -201,6 +201,8 @@ public final class KeyTimer implements ClientModInitializer {
 	private static long inventoryWaitNanos;
 	private static boolean openedInventory;
 	private static int stillWaits;
+	/** After a "slot" step's inventory work: the hotbar slot to select (-1 = none). */
+	private static int pendingSelect = -1;
 	/** For the "moved nothing" message: which inventory step is running and how many clicks it made. */
 	private static String invAction, invItem, invEndReason;
 	private static int invClicks;
@@ -698,6 +700,15 @@ public final class KeyTimer implements ClientModInitializer {
 			eatWaitNanos = (long) (step.waitSeconds * 1_000_000_000L);
 			return;
 		}
+		if ("slot".equals(step.action) && findSlot(client.player.getInventory(), step.item,
+				Math.max(0, Math.min(8, step.stacks - 1)), Math.max(0, Math.min(8, step.stacks - 1)) + 1) < 0
+				&& findSlot(client.player.getInventory(), step.item, 0, 36) >= 0) {
+			// it has to be moved into that slot: do it with the inventory open (servers can ignore it otherwise)
+			stepIndex++;
+			pendingSelect = Math.max(0, Math.min(8, step.stacks - 1));
+			startInventory(client, step);
+			return;
+		}
 		if ("slot".equals(step.action)) {
 			stepIndex++;
 			net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
@@ -844,6 +855,23 @@ public final class KeyTimer implements ClientModInitializer {
 			java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(step.item);
 			int[] guard = {0};
 			inventoryWork = () -> matches != null && guard[0]++ < 40 && dropOnce(client, matches);
+		} else if ("slot".equals(step.action)) {
+			int target = pendingSelect;
+			boolean[] done = {false};
+			inventoryWork = () -> {
+				if (done[0]) {
+					return false;
+				}
+				done[0] = true;
+				net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
+				int from = findSlot(inv, step.item, 0, 36);
+				if (from >= 0 && from != target) {
+					click(client, from < 9 ? 36 + from : from, target, net.minecraft.screen.slot.SlotActionType.SWAP);
+					inventoryDelay = 3;
+					return true; // one more tick so the server can apply it before the screen closes
+				}
+				return false;
+			};
 		} else if ("swapin".equals(step.action)) {
 			java.util.function.Predicate<net.minecraft.item.ItemStack> matches = itemMatcher(step.item);
 			int[] guard = {0};
@@ -896,6 +924,10 @@ public final class KeyTimer implements ClientModInitializer {
 
 	private static void finishInventory(MinecraftClient client, long now) {
 		inventoryWork = null;
+		if (pendingSelect >= 0) {
+			KeyBinding.onKeyPressed(InputUtil.fromTranslationKey(client.options.hotbarKeys[pendingSelect].getBoundKeyTranslationKey()));
+			pendingSelect = -1;
+		}
 		reportNothingMoved(client);
 		if (openedInventory && client.player != null
 				&& (client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen
