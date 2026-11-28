@@ -63,6 +63,8 @@ public final class KeyTimer implements ClientModInitializer {
 		/** goto: hold {@code key} until your X or Z ("x"/"z") reaches {@code gotoCoord}, or you get stuck. */
 		String gotoAxis;
 		Double gotoCoord;
+		/** mine: the two opposite corners of the box to dig out. */
+		Integer mineX1, mineY1, mineZ1, mineX2, mineY2, mineZ2;
 		/** walkto: the exact point to walk to (and how close counts as there). */
 		Double walkX, walkZ, walkTolerance;
 		/** goto: walk no faster than this many blocks a second along the axis (null = full speed). */
@@ -125,6 +127,12 @@ public final class KeyTimer implements ClientModInitializer {
 			step.gotoAxis = gotoAxis;
 			step.gotoCoord = gotoCoord;
 			step.gotoSpeed = gotoSpeed;
+			step.mineX1 = mineX1;
+			step.mineY1 = mineY1;
+			step.mineZ1 = mineZ1;
+			step.mineX2 = mineX2;
+			step.mineY2 = mineY2;
+			step.mineZ2 = mineZ2;
 			step.walkX = walkX;
 			step.walkZ = walkZ;
 			step.walkTolerance = walkTolerance;
@@ -211,6 +219,14 @@ public final class KeyTimer implements ClientModInitializer {
 	/** Head flick: while on, your pitch wanders between flickLow and flickHigh. */
 	private static boolean flicking;
 	/** "eat" step: hold right-click with the item until none is left (or nothing gets eaten for a while). */
+	/** mine: the box, the cursor through it, and progress tracking. */
+	private static boolean mining;
+	private static int mnX, mnY, mnZ, mxX, mxY, mxZ;
+	private static long mineCursor, mineTotal, mineTargetSince, mineWaitNanos, mineBroken, mineSkipped;
+	private static double mineBestDist;
+	private static long mineBestAt;
+	/** Corners picked with /keytimer mine pos1 / pos2. */
+	private static net.minecraft.util.math.BlockPos minePos1, minePos2;
 	/** walkto: target point, best distance so far and when, deadline. */
 	private static boolean walking;
 	private static double walkTX, walkTZ, walkTol, walkBest;
@@ -606,6 +622,10 @@ public final class KeyTimer implements ClientModInitializer {
 			tickWalk(client, now);
 			return;
 		}
+		if (mining) {
+			tickMine(client, now);
+			return;
+		}
 		if (holdingKey != null && moving) {
 			ClientPlayerEntity player = client.player;
 			double pos = moveOnX ? player.getX() : player.getZ();
@@ -673,6 +693,27 @@ public final class KeyTimer implements ClientModInitializer {
 				client.player.setPitch(step.lookPitch);
 			}
 			nextStepAt = now + (long) (step.waitSeconds * 1_000_000_000L);
+			return;
+		}
+		if ("mine".equals(step.action)) {
+			stepIndex++;
+			mnX = Math.min(step.mineX1, step.mineX2);
+			mxX = Math.max(step.mineX1, step.mineX2);
+			mnY = Math.min(step.mineY1, step.mineY2);
+			mxY = Math.max(step.mineY1, step.mineY2);
+			mnZ = Math.min(step.mineZ1, step.mineZ2);
+			mxZ = Math.max(step.mineZ1, step.mineZ2);
+			mineTotal = (long) (mxX - mnX + 1) * (mxY - mnY + 1) * (mxZ - mnZ + 1);
+			mineCursor = 0;
+			mineBroken = 0;
+			mineSkipped = 0;
+			mineTargetSince = now;
+			mineBestDist = Double.MAX_VALUE;
+			mineBestAt = now;
+			mineWaitNanos = (long) (step.waitSeconds * 1_000_000_000L);
+			mining = true;
+			say(Text.literal("Key Timer: mining " + (mxX - mnX + 1) + " x " + (mxY - mnY + 1) + " x " + (mxZ - mnZ + 1)
+					+ " (" + mineTotal + " blocks), top layer first").formatted(Formatting.GREEN));
 			return;
 		}
 		if ("walkto".equals(step.action)) {
@@ -1395,6 +1436,116 @@ public final class KeyTimer implements ClientModInitializer {
 		setWalkKeys(client, w, a, s, d);
 	}
 
+	/** The cursor-th block of the box: top layer first, each layer in back-and-forth rows. */
+	private static net.minecraft.util.math.BlockPos mineAt(long cursor) {
+		long sx = mxX - mnX + 1, sz = mxZ - mnZ + 1, layer = sx * sz;
+		long l = cursor / layer, r = cursor % layer;
+		long row = r / sz, col = r % sz;
+		int y = (int) (mxY - l);
+		int x = (int) ((l % 2 == 0) ? mnX + row : mxX - row);
+		int z = (int) ((row % 2 == 0) == (l % 2 == 0) ? mnZ + col : mxZ - col);
+		return new net.minecraft.util.math.BlockPos(x, y, z);
+	}
+
+	private static boolean inMineBox(net.minecraft.util.math.BlockPos p) {
+		return p.getX() >= mnX && p.getX() <= mxX && p.getY() >= mnY && p.getY() <= mxY && p.getZ() >= mnZ && p.getZ() <= mxZ;
+	}
+
+	/** Air, water, unbreakable, or next to lava: nothing to (safely) dig here. */
+	private static boolean skipMineBlock(net.minecraft.client.world.ClientWorld world, net.minecraft.util.math.BlockPos p) {
+		net.minecraft.block.BlockState st = world.getBlockState(p);
+		if (st.isAir() || !st.getFluidState().isEmpty() || st.getHardness(world, p) < 0) {
+			return true;
+		}
+		for (net.minecraft.util.math.Direction d : net.minecraft.util.math.Direction.values()) {
+			if (world.getFluidState(p.offset(d)).isIn(net.minecraft.registry.tag.FluidTags.LAVA)) {
+				return true; // never open up lava
+			}
+		}
+		return false;
+	}
+
+	private static void stopMineKeys(MinecraftClient client) {
+		client.options.attackKey.setPressed(false);
+		client.options.jumpKey.setPressed(false);
+		setWalkKeys(client, false, false, false, false);
+	}
+
+	/**
+	 * mine: digs out the box. Picks the next solid block (top layer first), walks towards it if it's
+	 * out of reach, looks straight at it and holds attack until it breaks. Blocks in the way get dug
+	 * too, but only ones inside the box. A block that can't be reached or broken for a while is skipped.
+	 */
+	private static void tickMine(MinecraftClient client, long now) {
+		ClientPlayerEntity p = client.player;
+		net.minecraft.client.world.ClientWorld world = client.world;
+		// move the cursor past blocks that are already gone (a few thousand checks per tick at most)
+		long before = mineCursor;
+		for (int n = 0; n < 4000 && mineCursor < mineTotal; n++) {
+			net.minecraft.util.math.BlockPos t = mineAt(mineCursor);
+			if (!world.getChunkManager().isChunkLoaded(t.getX() >> 4, t.getZ() >> 4) || !skipMineBlock(world, t)) {
+				break;
+			}
+			mineCursor++;
+		}
+		if (mineCursor != before) {
+			if (before > 0) {
+				mineBroken++;
+			}
+			mineTargetSince = now;
+			mineBestDist = Double.MAX_VALUE;
+			mineBestAt = now;
+		}
+		if (mineCursor >= mineTotal) {
+			stopMineKeys(client);
+			mining = false;
+			say(Text.literal("Key Timer: finished mining" + (mineSkipped > 0 ? " (" + mineSkipped + " blocks skipped)" : ""))
+					.formatted(Formatting.GREEN));
+			nextStepAt = now + mineWaitNanos;
+			return;
+		}
+		net.minecraft.util.math.BlockPos t = mineAt(mineCursor);
+		net.minecraft.util.math.Vec3d eye = p.getEyePos();
+		net.minecraft.util.math.Vec3d c = net.minecraft.util.math.Vec3d.ofCenter(t);
+		double dx = c.x - eye.x, dy = c.y - eye.y, dz = c.z - eye.z;
+		double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+		if (dist < mineBestDist - 0.1) {
+			mineBestDist = dist;
+			mineBestAt = now;
+		}
+		// look at it
+		float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+		float pitch = (float) -Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)));
+		p.setYaw(yaw);
+		p.setHeadYaw(yaw);
+		p.setPitch(Math.max(-90, Math.min(90, pitch)));
+		// only ever break blocks inside the box
+		boolean aimInBox = client.crosshairTarget instanceof net.minecraft.util.hit.BlockHitResult bh
+				&& bh.getType() == net.minecraft.util.hit.HitResult.Type.BLOCK && inMineBox(bh.getBlockPos());
+		client.options.attackKey.setPressed(aimInBox);
+		boolean inReach = dist <= p.getBlockInteractionRange() - 0.3;
+		if (inReach) {
+			setWalkKeys(client, false, false, false, false);
+			client.options.jumpKey.setPressed(false);
+		} else {
+			// walk towards it, hopping up single steps
+			setWalkKeys(client, true, false, false, false);
+			client.options.jumpKey.setPressed(p.horizontalCollision && dy > -1);
+		}
+		boolean stuck = (!inReach && now - mineBestAt > 8_000_000_000L) || now - mineTargetSince > 20_000_000_000L;
+		if (stuck) {
+			mineSkipped++;
+			mineCursor++;
+			mineTargetSince = now;
+			mineBestDist = Double.MAX_VALUE;
+			mineBestAt = now;
+			actionBar(Text.literal("Key Timer: couldn't mine " + t.getX() + " " + t.getY() + " " + t.getZ() + ", skipped it").formatted(Formatting.YELLOW));
+		} else if (now % 2_000_000_000L < 50_000_000L) {
+			actionBar(Text.literal(String.format(Locale.ROOT, "Mining: %d%% (layer y=%d)", mineCursor * 100 / mineTotal, t.getY()))
+					.formatted(Formatting.GRAY));
+		}
+	}
+
 	private static void tickEat(MinecraftClient client, long now) {
 		net.minecraft.entity.player.PlayerInventory inv = client.player.getInventory();
 		KeyBinding use = client.options.useKey;
@@ -1618,6 +1769,10 @@ public final class KeyTimer implements ClientModInitializer {
 			walking = false;
 			setWalkKeys(MinecraftClient.getInstance(), false, false, false, false);
 		}
+		if (mining) {
+			mining = false;
+			stopMineKeys(MinecraftClient.getInstance());
+		}
 		if (eatMatches != null) {
 			eatMatches = null;
 			MinecraftClient.getInstance().options.useKey.setPressed(false);
@@ -1710,6 +1865,7 @@ public final class KeyTimer implements ClientModInitializer {
 							: "head flick between " + s.flickMin + " and " + s.flickMax + " pitch, about every " + trim(s.flickEvery) + "s" + (s.flickSteps != null ? ", " + s.flickSteps + " angles" : ""))
 					: "deposit".equals(s.action) ? "put all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " into the chest you're looking at"
 					: "chest".equals(s.action) ? "take " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the chest you're looking at (up to " + (s.stacks > 0 ? s.stacks : 9) + " stacks)"
+					: "mine".equals(s.action) ? "mine everything from " + s.mineX1 + " " + s.mineY1 + " " + s.mineZ1 + " to " + s.mineX2 + " " + s.mineY2 + " " + s.mineZ2
 					: "walkto".equals(s.action) ? "walk to x " + trim(s.walkX) + ", z " + trim(s.walkZ) + (s.walkTolerance != null ? " (within " + trim(s.walkTolerance) + ")" : "")
 					: "eat".equals(s.action) ? "eat every " + s.item.replace("name:", "").replace("|", " / ") + " in the inventory"
 					: "swapin".equals(s.action) ? "fill the hotbar with " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " (swapping out whatever is there)"
@@ -1771,6 +1927,23 @@ public final class KeyTimer implements ClientModInitializer {
 				.then(lookForm(action))
 				.then(dropForm(action))
 				.then(stashForm(action))
+				.then(literal("mine")
+						.then(literal("pos1").executes(ctx -> mineCorner(ctx.getSource(), true)))
+						.then(literal("pos2").executes(ctx -> mineCorner(ctx.getSource(), false)))
+						.then(literal("selection").then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> {
+							if (minePos1 == null || minePos2 == null) {
+								ctx.getSource().sendError(Text.literal("Set both corners first: /keytimer mine pos1 and /keytimer mine pos2"));
+								return 0;
+							}
+							return action.run(ctx, mineStep(minePos1.getX(), minePos1.getY(), minePos1.getZ(), minePos2.getX(), minePos2.getY(),
+									minePos2.getZ(), DoubleArgumentType.getDouble(ctx, "waitSeconds")));
+						})))
+						.then(argument("x1", IntegerArgumentType.integer()).then(argument("y1", IntegerArgumentType.integer()).then(argument("z1", IntegerArgumentType.integer())
+								.then(argument("x2", IntegerArgumentType.integer()).then(argument("y2", IntegerArgumentType.integer()).then(argument("z2", IntegerArgumentType.integer())
+										.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> action.run(ctx, mineStep(
+												IntegerArgumentType.getInteger(ctx, "x1"), IntegerArgumentType.getInteger(ctx, "y1"), IntegerArgumentType.getInteger(ctx, "z1"),
+												IntegerArgumentType.getInteger(ctx, "x2"), IntegerArgumentType.getInteger(ctx, "y2"), IntegerArgumentType.getInteger(ctx, "z2"),
+												DoubleArgumentType.getDouble(ctx, "waitSeconds")))))))))))))
 				.then(literal("walkto").then(argument("x", DoubleArgumentType.doubleArg(-30_000_000, 30_000_000))
 						.then(argument("z", DoubleArgumentType.doubleArg(-30_000_000, 30_000_000))
 								.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> walkStep(ctx, action, null))
@@ -1916,6 +2089,32 @@ public final class KeyTimer implements ClientModInitializer {
 														flickStep(ctx, action, IntegerArgumentType.getInteger(ctx, "angles"))))))));
 	}
 
+	private static Step mineStep(int x1, int y1, int z1, int x2, int y2, int z2, double wait) {
+		Step step = Step.inventory("mine", null, wait);
+		step.mineX1 = x1;
+		step.mineY1 = y1;
+		step.mineZ1 = z1;
+		step.mineX2 = x2;
+		step.mineY2 = y2;
+		step.mineZ2 = z2;
+		return step;
+	}
+
+	/** Corner = the block you're looking at, or the block you're standing on. */
+	private static int mineCorner(FabricClientCommandSource source, boolean first) {
+		MinecraftClient client = MinecraftClient.getInstance();
+		net.minecraft.util.math.BlockPos pos = client.crosshairTarget instanceof net.minecraft.util.hit.BlockHitResult bh
+				&& bh.getType() == net.minecraft.util.hit.HitResult.Type.BLOCK ? bh.getBlockPos() : client.player.getBlockPos().down();
+		if (first) {
+			minePos1 = pos;
+		} else {
+			minePos2 = pos;
+		}
+		source.sendFeedback(Text.literal("Corner " + (first ? 1 : 2) + ": " + pos.getX() + " " + pos.getY() + " " + pos.getZ()
+				+ (minePos1 != null && minePos2 != null ? "   now: /keytimer mine selection 0" : "")).formatted(Formatting.GREEN));
+		return 1;
+	}
+
 	private static int walkStep(com.mojang.brigadier.context.CommandContext<FabricClientCommandSource> ctx, StepAction action, Double tolerance) {
 		Step step = Step.inventory("walkto", null, DoubleArgumentType.getDouble(ctx, "waitSeconds"));
 		step.walkX = DoubleArgumentType.getDouble(ctx, "x");
@@ -2049,6 +2248,7 @@ public final class KeyTimer implements ClientModInitializer {
 							: "head flick between " + s.flickMin + " and " + s.flickMax + " pitch, about every " + trim(s.flickEvery) + "s" + (s.flickSteps != null ? ", " + s.flickSteps + " angles" : ""))
 					: "deposit".equals(s.action) ? "put all " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " into the chest you're looking at"
 					: "chest".equals(s.action) ? "take " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " from the chest you're looking at (up to " + (s.stacks > 0 ? s.stacks : 9) + " stacks)"
+					: "mine".equals(s.action) ? "mine everything from " + s.mineX1 + " " + s.mineY1 + " " + s.mineZ1 + " to " + s.mineX2 + " " + s.mineY2 + " " + s.mineZ2
 					: "walkto".equals(s.action) ? "walk to x " + trim(s.walkX) + ", z " + trim(s.walkZ) + (s.walkTolerance != null ? " (within " + trim(s.walkTolerance) + ")" : "")
 					: "eat".equals(s.action) ? "eat every " + s.item.replace("name:", "").replace("|", " / ") + " in the inventory"
 					: "swapin".equals(s.action) ? "fill the hotbar with " + (s.item != null && s.item.startsWith("name:") ? "items named " + s.item.substring(5) : s.item) + " (swapping out whatever is there)"
@@ -2094,6 +2294,8 @@ public final class KeyTimer implements ClientModInitializer {
 				&& java.util.Objects.equals(a.gotoAxis, b.gotoAxis) && java.util.Objects.equals(a.gotoCoord, b.gotoCoord) && java.util.Objects.equals(a.gotoSpeed, b.gotoSpeed)
 				&& java.util.Objects.equals(a.flickMin, b.flickMin) && java.util.Objects.equals(a.flickMax, b.flickMax) && java.util.Objects.equals(a.flickEvery, b.flickEvery) && java.util.Objects.equals(a.flickSteps, b.flickSteps)
 				&& java.util.Objects.equals(a.clickButton, b.clickButton) && java.util.Objects.equals(a.clickCps, b.clickCps)
+				&& java.util.Objects.equals(a.mineX1, b.mineX1) && java.util.Objects.equals(a.mineY1, b.mineY1) && java.util.Objects.equals(a.mineZ1, b.mineZ1)
+				&& java.util.Objects.equals(a.mineX2, b.mineX2) && java.util.Objects.equals(a.mineY2, b.mineY2) && java.util.Objects.equals(a.mineZ2, b.mineZ2)
 				&& java.util.Objects.equals(a.walkX, b.walkX) && java.util.Objects.equals(a.walkZ, b.walkZ) && java.util.Objects.equals(a.walkTolerance, b.walkTolerance);
 	}
 

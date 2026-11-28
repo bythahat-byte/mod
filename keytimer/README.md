@@ -62,3 +62,15 @@ Some servers don't allow macros; check their rules.
 /keytimer start 1       load save "1" and start it
 /keytimer delete 1      delete save "1"
 ```
+
+## Mining an area
+
+```
+/keytimer mine pos1                 corner 1 = the block you're looking at (or standing on)
+/keytimer mine pos2                 corner 2
+/keytimer mine selection 0          add a step that digs out everything between them
+/keytimer mine 100 70 200 120 60 230 0   the same with coordinates typed in
+```
+Start standing on top of the area holding a pickaxe. It digs the top layer first, row by row, then the
+next layer down, walking to blocks that are out of reach. It only breaks blocks inside the box, never
+opens up lava, skips water and unbreakable blocks, and skips any block it can't reach or break in time.
