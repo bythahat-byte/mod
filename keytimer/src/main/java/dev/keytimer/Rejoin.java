@@ -100,11 +100,13 @@ final class Rejoin {
 						checkPlayers = true;
 						schedule(KeyTimer.config().safeLogoutWaitMinutes * 60L, "Safe Logout left; checking again in "
 								+ KeyTimer.config().safeLogoutWaitMinutes + " min");
-					} else if (isConnectionProblem(reason)) {
-						checkPlayers = false;
-						schedule(10, "connection lost (" + reason.getString() + "); rejoining in 10 s");
+					} else if (reason.getString().toLowerCase(Locale.ROOT).contains("banned")) {
+						giveUp("banned: " + reason.getString()); // rejoining can't work
 					} else {
-						giveUp("disconnected: " + reason.getString());
+						// any other way of being disconnected (timeout, kick, restart, ...): come back
+						checkPlayers = false;
+						long wait = isConnectionProblem(reason) ? 10 : 30;
+						schedule(wait, "disconnected (" + reason.getString() + "); rejoining in " + wait + " s");
 					}
 				} else if (now > at) {
 					giveUp("left the server");
