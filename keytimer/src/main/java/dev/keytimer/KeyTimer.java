@@ -1943,7 +1943,7 @@ public final class KeyTimer implements ClientModInitializer {
 										.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> action.run(ctx, mineStep(
 												IntegerArgumentType.getInteger(ctx, "x1"), IntegerArgumentType.getInteger(ctx, "y1"), IntegerArgumentType.getInteger(ctx, "z1"),
 												IntegerArgumentType.getInteger(ctx, "x2"), IntegerArgumentType.getInteger(ctx, "y2"), IntegerArgumentType.getInteger(ctx, "z2"),
-												DoubleArgumentType.getDouble(ctx, "waitSeconds")))))))))))))
+												DoubleArgumentType.getDouble(ctx, "waitSeconds"))))))))))))
 				.then(literal("walkto").then(argument("x", DoubleArgumentType.doubleArg(-30_000_000, 30_000_000))
 						.then(argument("z", DoubleArgumentType.doubleArg(-30_000_000, 30_000_000))
 								.then(argument("waitSeconds", DoubleArgumentType.doubleArg(0, 86400)).executes(ctx -> walkStep(ctx, action, null))
