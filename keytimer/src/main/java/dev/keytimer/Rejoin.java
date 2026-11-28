@@ -36,6 +36,7 @@ final class Rejoin {
 	private static long savedAt;
 	/** True when this rejoin came from Safe Logout: check the list before resuming. */
 	private static boolean checkPlayers;
+	private static long watchUntil;
 	private static boolean safeLogoutPending;
 	private static ClientWorld lobbyWorld;
 	private static int attempts;
@@ -54,6 +55,7 @@ final class Rejoin {
 			KeyTimer.cancelSuspend();
 		}
 		safeLogoutPending = false;
+		watchUntil = 0;
 	}
 
 	static void onSafeLogout() {
@@ -75,6 +77,18 @@ final class Rejoin {
 
 	static void tick(MinecraftClient client) {
 		if (state == State.IDLE) {
+			// just after resuming: the Tab list can fill in late, so leave if someone on the list shows up
+			if (watchUntil != 0 && client.player != null && client.getNetworkHandler() != null) {
+				long now = System.nanoTime();
+				String who = listedPlayerOnline();
+				if (who != null) {
+					watchUntil = 0;
+					KeyTimer.suspend();
+					leaveAgain(client, now, who);
+				} else if (now > watchUntil) {
+					watchUntil = 0;
+				}
+			}
 			return;
 		}
 		long now = System.nanoTime();
@@ -104,7 +118,7 @@ final class Rejoin {
 						giveUp("banned: " + reason.getString()); // rejoining can't work
 					} else {
 						// any other way of being disconnected (timeout, kick, restart, ...): come back
-						checkPlayers = false;
+						checkPlayers = true;
 						long wait = isConnectionProblem(reason) ? 10 : 30;
 						schedule(wait, "disconnected (" + reason.getString() + "); rejoining in " + wait + " s");
 					}
@@ -191,19 +205,13 @@ final class Rejoin {
 			case CHECK -> {
 				if (client.player == null) {
 					retry("lost the server");
+				} else if (checkPlayers && listedPlayerOnline() != null) {
+					leaveAgain(client, now, listedPlayerOnline());
 				} else if (now >= at) {
-					if (checkPlayers && listedPlayerOnline()) {
-						KeyTimer.say(Text.literal("Key Timer: someone on your Safe Logout list is still online, leaving again for "
-								+ KeyTimer.config().safeLogoutWaitMinutes + " min").formatted(Formatting.YELLOW));
-						safeLogoutPending = true;
-						state = State.LOST;
-						at = now + 10 * SECOND;
-						client.getNetworkHandler().getConnection().disconnect(Text.literal("Key Timer: someone on your list is still online."));
-					} else {
-						state = State.IDLE;
-						attempts = 0;
-						KeyTimer.resume();
-					}
+					state = State.IDLE;
+					attempts = 0;
+					watchUntil = checkPlayers ? now + 20 * SECOND : 0; // keep an eye on the Tab list a little longer
+					KeyTimer.resume();
 				}
 			}
 			default -> {
@@ -271,13 +279,49 @@ final class Rejoin {
 	}
 
 	/** Asks Safe Logout (if installed) whether anyone on its list is online. */
-	private static boolean listedPlayerOnline() {
-		try {
-			Object result = Class.forName("dev.safelogout.SafeLogout").getMethod("anyListedOnline").invoke(null);
-			return Boolean.TRUE.equals(result);
-		} catch (Throwable t) {
-			return false;
+	private static void leaveAgain(MinecraftClient client, long now, String who) {
+		KeyTimer.say(Text.literal("Key Timer: " + who + " (on your Safe Logout list) is online, leaving again for "
+				+ KeyTimer.config().safeLogoutWaitMinutes + " min").formatted(Formatting.YELLOW));
+		KeyTimer.logInfo("Rejoin: " + who + " is online, leaving again");
+		safeLogoutPending = true;
+		state = State.LOST;
+		at = now + 10 * SECOND;
+		client.getNetworkHandler().getConnection().disconnect(Text.literal("Key Timer: " + who + " is online."));
+	}
+
+	/**
+	 * The first player on Safe Logout's list who is in the Tab list right now, or null. Reads Safe
+	 * Logout's saved list straight from config/safelogout.json, so it works with any version of it.
+	 */
+	private static String listedPlayerOnline() {
+		MinecraftClient client = MinecraftClient.getInstance();
+		if (client.getNetworkHandler() == null) {
+			return null;
 		}
+		java.util.Set<String> listed = new java.util.HashSet<>();
+		try {
+			java.nio.file.Path file = net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("safelogout.json");
+			com.google.gson.JsonObject json = com.google.gson.JsonParser.parseString(java.nio.file.Files.readString(file)).getAsJsonObject();
+			if (json.has("enabled") && !json.get("enabled").getAsBoolean()) {
+				return null; // Safe Logout is switched off
+			}
+			for (String key : new String[] {"enemies", "admins"}) {
+				if (json.has(key)) {
+					for (com.google.gson.JsonElement e : json.getAsJsonArray(key)) {
+						listed.add(e.getAsString().toLowerCase(Locale.ROOT));
+					}
+				}
+			}
+		} catch (Throwable t) {
+			return null; // no Safe Logout list
+		}
+		for (net.minecraft.client.network.PlayerListEntry entry : client.getNetworkHandler().getPlayerList()) {
+			String name = entry.getProfile().name();
+			if (name != null && listed.contains(name.toLowerCase(Locale.ROOT))) {
+				return name;
+			}
+		}
+		return null;
 	}
 
 	/** "/keytimer resume": you're in the right place, carry on now (e.g. joined straight into the server). */
@@ -286,6 +330,7 @@ final class Rejoin {
 			return false;
 		}
 		checkPlayers = false; // you asked to carry on: don't check the Safe Logout list
+		watchUntil = 0;
 		safeLogoutPending = false;
 		arrived(System.nanoTime());
 		return true;
